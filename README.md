@@ -9,8 +9,9 @@ There are three ranked motivation to write such a program:
  wait to introduce
 
 # Simulation Experiments
-Although TCP-CNHA looks like a heuristic algorithm at present, we still spare no effort to dig its potential value in other reliable transmission scenarios with cellular network handover-like overhead. 
-##
+Although TCP-CNHA looks like a heuristic algorithm at present, we still spare no effort to dig its potential value in other reliable transmission scenarios with cellular network handover-like overhead. Whether to compare TCP-CNHA with other existing congestion algorithms from different metrix or to show TCP-CNHA's performance in others network, we must need lots of simulation experiments to support or prove our thoeries and guesses. However, the native simulation interface provided by ns-3 is still too tedious that we have to manually draw figures and prepare inputs after each simulation iteration.
+
+## 
 
 # How to use
 - `Step 1`: Clone mmWave-ns3 repository: `git clone https://github.com/nyuwireless-unipd/ns3-mmwave`
