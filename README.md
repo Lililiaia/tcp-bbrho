@@ -9,8 +9,7 @@ There are three ranked motivation to write such a program:
  wait to introduce
 
 # Simulation Experiments
-Although TCP-CNHA looks like a heuristic algorithm at present, we still spare no effort to dig its potential value in other reliable transmission scenarios with cellular network handover-like overhead. Whether to compare TCP-CNHA with other existing congestion algorithms from different metrix or to show TCP-CNHA's performance in others network, we must need lots of simulation experiments to support or prove our thoeries and guesses. However, the native simulation interface provided by ns-3 is still too tedious that we have to manually draw figures and prepare inputs after each simulation iteration.
-
+Although TCP-CNHA looks like a heuristic algorithm at present, we will still spare no effort to dig its potential value in other reliable transmission scenarios with cellular network handover-like overhead. Whether to compare TCP-CNHA with other existing congestion algorithms from different metrix or to show TCP-CNHA's performance in others network, we must need lots of simulation experiments to support or prove our thoeries and guesses. However, the native simulation interface provided by ns-3 is still too tedious that we have to manually draw figures and prepare inputs after each simulation iteration. Obviously, such a experiment mode is not efficient enough. That is why we spent some time write this program —— it can alleviate our subsequent work load. As for the remaining parts, we will introduce our several experiment designs.
 ## 
 
 # How to use
