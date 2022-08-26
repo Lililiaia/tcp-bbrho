@@ -1,11 +1,16 @@
 # Introduction
 This a human-friendly configurable and automated 5G NSA network simulation subroutine running on [mmWave-ns3](https://github.com/nyuwireless-unipd/ns3-mmwave).
 There are three ranked motivation to write such a program:
-- Used as the testbed for TCP-WSA algorithm.
+- Used as the testbed for TCP-CNHA algorithm.
 - A human-friendly configuration system can do speed up simulation enviornment deployment.
 - The one-click-to-run program design can reduce unnecessary and error-prone manual operation and make less effort to be reproduced by others.
 
-# A wireless handover-aware TCP congestion control algorithm (TCP-WSA)
+# A cellular network handover-aware TCP congestion control algorithm (TCP-CNHA)
+ wait to introduce
+
+# Simulation Experiments
+Although TCP-CNHA looks like a heuristic algorithm at present, we still spare no effort to dig its potential value in other reliable transmission scenarios with cellular network handover-like overhead. 
+##
 
 # How to use
 - `Step 1`: Clone mmWave-ns3 repository: `git clone https://github.com/nyuwireless-unipd/ns3-mmwave`
