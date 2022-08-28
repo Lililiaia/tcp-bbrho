@@ -13,7 +13,5 @@ Although TCP-CNHA looks like a heuristic algorithm at present, we will still spa
 ## 
 
 # How to use
-- `Step 1`: Clone mmWave-ns3 repository: `git clone https://github.com/nyuwireless-unipd/ns3-mmwave`
-- `Step 2`: Create a new directory <ROOT_DIR> at mmWave-ns3/examples/
-- `Step 3`: Copy all files from this repository to <ROOT_DIR>
-- `Step 4`: Back to mmWave-ns3 directory and run command: `./waf --run "lte examples/nsa/config.cfg"`
+- `Step 1`: deploy simulation environment: `./install.sh`
+- `Step 2`: `./waf --run "lte examples/nsa/config.cfg"`
