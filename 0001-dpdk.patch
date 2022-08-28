@@ -1,0 +1,25 @@
+From 339728b222b1ab1d31b1421dd212c1983dae82fb Mon Sep 17 00:00:00 2001
+From: zhaoxin <xionyuno@gmail.com>
+Date: Sun, 28 Aug 2022 15:26:49 +0000
+Subject: [PATCH] dpdk
+
+---
+ src/fd-net-device/model/dpdk-net-device.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/fd-net-device/model/dpdk-net-device.cc b/src/fd-net-device/model/dpdk-net-device.cc
+index b00dab84..9ab7daaf 100644
+--- a/src/fd-net-device/model/dpdk-net-device.cc
++++ b/src/fd-net-device/model/dpdk-net-device.cc
+@@ -412,7 +412,7 @@ DpdkNetDevice::InitDpdk (int argc, char** argv, std::string dpdkDriver)
+   CheckAllPortsLinkStatus ();
+ 
+   NS_LOG_INFO ("Launching core threads");
+-  rte_eal_mp_remote_launch (LaunchCore, this, CALL_MASTER);
++  rte_eal_mp_remote_launch (LaunchCore, this, CALL_MAIN);
+ }
+ 
+ uint8_t*
+-- 
+2.25.1
+
