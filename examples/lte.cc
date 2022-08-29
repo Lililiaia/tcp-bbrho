@@ -2,6 +2,9 @@
 
 NS_LOG_COMPONENT_DEFINE("ltetest");
 
+
+
+
 int
 main(int argc, char* argv[]){
     config_init(argc,argv);
@@ -51,7 +54,7 @@ main(int argc, char* argv[]){
     Ipv4AddressHelper ipv4h;
     ipv4h.SetBase("1.0.0.0","255.0.0.0");
     auto ifaces=ipv4h.Assign(devices);
-    Ipv4Address sAddr=ifaces.GetAddress(1);
+   // Ipv4Address sAddr=ifaces.GetAddress(1);
 
     Ipv4StaticRoutingHelper routingHelper;
     Ptr<Ipv4StaticRouting> staticRouting = routingHelper.GetStaticRouting(sNode->GetObject<Ipv4>());
@@ -73,7 +76,31 @@ main(int argc, char* argv[]){
     }
 
     internet.Install(ueNodes);
+    Ipv4InterfaceContainer ueIpIface=epcHepler->AssignUeIpv4Address(NetDeviceContainer(ueDevs));
+
+    // Assign IP address to UEs
+    Ptr<Ipv4StaticRouting> ueStaticRouting =routingHelper.GetStaticRouting(ueNode->GetObject<Ipv4>());
+    ueStaticRouting->SetDefaultRoute(epcHepler->GetUeDefaultGatewayAddress(),1);
+
+    // Attach one UE to eNodeB A
+    lteHepler->Attach(ueDevs.Get(0),enbDevs.Get(0));
+
     
+
+    // Install and start applications on UEs and remote host
+    MyBulkSendHelper bh("ns3::TcpSocketFactory",InetSocketAddress(ueIpIface.GetAddress(0),5000));
+    bh.SetAttribute("SendSize",UintegerValue(send_size));
+    ApplicationContainer serverApps=bh.Install(sNode);
+    
+    
+    MyPacketSinkHelper ph("ns3::TcpSocketFactory",InetSocketAddress(ueIpIface.GetAddress(0),5000));
+    ApplicationContainer clientApps=ph.Install(ueNode);
+    
+    
+
+
+
+    lteHepler->EnableTraces();
 
 
     print_stats();

@@ -3,4 +3,4 @@
 def build(bld):
     obj = bld.create_ns3_program('lte',
                                  ['lte','flow-monitor'])
-    obj.source = 'lte.cc'
+    obj.source = ['lte.cc','my-packet-sink.cc','mybulk-send-application.cc','mybulk-send-helper.cc','mypacket-sink-helper.cc']
