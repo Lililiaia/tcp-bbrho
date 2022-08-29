@@ -17,6 +17,7 @@
  *
  * Author:  Tom Henderson (tomhend@u.washington.edu)
  */
+#include <fstream>
 #include "ns3/address.h"
 #include "ns3/address-utils.h"
 #include "ns3/log.h"
@@ -34,12 +35,29 @@
 #include "ns3/boolean.h"
 #include "ns3/ipv4-packet-info-tag.h"
 #include "ns3/ipv6-packet-info-tag.h"
+#include "ns3/tcp-socket-base.h"
+
+extern uint64_t rx_bytes;
+extern bool enable_rx_throughput_stats;
+extern bool enable_rwnd_trace;
+extern std::string root_dir;
+extern int tcp_mss;
+static void rx_trace(ns3::Ptr<const ns3::Packet> p, const ns3::TcpHeader& header,ns3::Ptr<const ns3::TcpSocketBase> socket){
+    rx_bytes+=p->GetSize();
+}
+static void rwnd_trace(uint32_t old_val, uint32_t new_val){
+    static std::ofstream thr(root_dir + "rwnd.trace", std::ios::out | std::ios::app);
+    ns3::Time curtime=ns3::Now();
+    thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
+}
 
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("MyPacketSink");
 
 NS_OBJECT_ENSURE_REGISTERED (MyPacketSink);
+
+
 
 TypeId 
 MyPacketSink::GetTypeId (void)
@@ -302,6 +320,13 @@ void MyPacketSink::HandleAccept (Ptr<Socket> s, const Address& from)
 {
   NS_LOG_FUNCTION (this << s << from);
   s->SetRecvCallback (MakeCallback (&MyPacketSink::HandleRead, this));
+  Ptr<TcpSocketBase> tcpSocket=DynamicCast<TcpSocketBase,Socket>(s);
+  if(tcpSocket&&enable_rx_throughput_stats){
+    tcpSocket->TraceConnectWithoutContext("Rx",MakeCallback(&rx_trace));
+  }
+  if(tcpSocket&&enable_rwnd_trace){
+    tcpSocket->TraceConnectWithoutContext("RWND",MakeCallback(&rwnd_trace));
+  }
   m_socketList.push_back (s);
 }
 

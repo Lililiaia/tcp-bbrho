@@ -85,7 +85,6 @@ main(int argc, char* argv[]){
     // Attach one UE to eNodeB A
     lteHepler->Attach(ueDevs.Get(0),enbDevs.Get(0));
 
-    
 
     // Install and start applications on UEs and remote host
     MyBulkSendHelper bh("ns3::TcpSocketFactory",InetSocketAddress(ueIpIface.GetAddress(0),5000));
@@ -95,6 +94,11 @@ main(int argc, char* argv[]){
     
     MyPacketSinkHelper ph("ns3::TcpSocketFactory",InetSocketAddress(ueIpIface.GetAddress(0),5000));
     ApplicationContainer clientApps=ph.Install(ueNode);
+
+    serverApps.Start(Seconds(1.0));
+    clientApps.Start(Seconds(1.0));
+    serverApps.Stop(Seconds(1.0+simulation_time));
+    clientApps.Stop(Seconds(1.0+simulation_time));
     
     
 

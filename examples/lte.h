@@ -160,15 +160,13 @@ static void phy_tx_drop_callback(int device_id,Ptr<const Packet>);
 static void phy_rx_drop_callback(int device_id,Ptr<const Packet>);
 static void print_stats();
 static int get_device_id(std::string name);
-static void rto_trace(Time old_val, Time new_val);
+/* static void rto_trace(Time old_val, Time new_val);
 static void rtt_trace(Time old_val,Time new_val);
 static void advwnd_trace(uint32_t old_val,uint32_t new_val);
 static void cwnd_trace(uint32_t old_val, uint32_t new_val);
 static void cwnd_inflated_trace(uint32_t old_val, uint32_t new_val);
-static void tx_trace(Ptr<const Packet> p, const TcpHeader& header,Ptr<const TcpSocketBase> socket);
-static void rx_trace(Ptr<const Packet>p, const Address & addr);
-static void serverConnectedSucceeded(Ptr<Socket> skt);
-static void connectedFailed(Ptr<Socket> skt);
+static void rx_trace(Ptr<const Packet>p, const Address & addr); */
+
 
 static void mac_tx_drop_callback(int device_id,Ptr<const Packet> p){
     mac_drop[device_id]++;
@@ -222,75 +220,12 @@ static inline void trim(std::string &s) {
     rtrim(s);
 }
 
-static void rto_trace(Time old_val, Time new_val){
-    static std::ofstream thr(root_dir + "rto.trace", std::ios::out | std::ios::app);
-    Time curtime=Now();
-    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
-}
+/* 
 
-static void rtt_trace(Time old_val, Time new_val){
-    static std::ofstream thr(root_dir + "rtt.trace", std::ios::out | std::ios::app);
-    Time curtime=Now();
-    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
-}
-
-static void advwnd_trace(uint32_t old_val, uint32_t new_val){
-    static std::ofstream thr(root_dir + "advwnd.trace", std::ios::out | std::ios::app);
-    Time curtime=Now();
-    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
-}
-
-static void cwnd_trace(uint32_t old_val, uint32_t new_val){
-    static std::ofstream thr(root_dir + "cwnd.trace", std::ios::out | std::ios::app);
-    Time curtime=Now();
-    thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
-}
-
-static void cwnd_inflated_trace(uint32_t old_val, uint32_t new_val){
-    static std::ofstream thr(root_dir + "cwnd_inflated.trace", std::ios::out | std::ios::app);
-    Time curtime=Now();
-    thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
-}
-static void tx_trace(Ptr<const Packet> p, const TcpHeader& header,Ptr<const TcpSocketBase> socket){
-    tx_bytes+=p->GetSize();
-}
 
 static void rx_trace(Ptr<const Packet>p, const Address & addr){
     rx_bytes+=p->GetSize();
-}
-
-static void serverConnectedSucceeded(Ptr<Socket> skt){
-    Ptr<TcpSocketBase> sSocket=DynamicCast<TcpSocketBase,Socket>(skt);
-    NS_ASSERT(sSocket!=0);
-    if(enable_rto_trace){
-        sSocket->TraceConnectWithoutContext("RTO",MakeCallback(&rto_trace));
-    }
-
-    if(enable_rtt_trace){
-        sSocket->TraceConnectWithoutContext("RTT",MakeCallback(&rtt_trace));
-    }
-
-    if(enable_advwnd_trace){
-        sSocket->TraceConnectWithoutContext("AdvWND",MakeCallback(&advwnd_trace));
-    }    
-
-    if(enable_cwnd_trace){
-        sSocket->TraceConnectWithoutContext("CongestionWindow",MakeCallback(&cwnd_trace));
-    }
-
-    if(enable_cwnd_inflate_trace){
-        sSocket->TraceConnectWithoutContext("CongestionWindowInflated",MakeCallback(&cwnd_inflated_trace));
-    }
-    
-    if(enable_tx_throughput_stats){
-        sSocket->TraceConnectWithoutContext("Tx",MakeCallback(&tx_trace));
-    }
-}
-
-
-static void connectedFailed(Ptr<Socket> skt){
-    NS_ABORT_MSG("connected failure");
-}
+} */
 
 
 

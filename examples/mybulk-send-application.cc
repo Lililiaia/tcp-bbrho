@@ -17,7 +17,7 @@
  *
  * Author: George F. Riley <riley@ece.gatech.edu>
  */
-
+#include <fstream>
 #include "ns3/log.h"
 #include "ns3/address.h"
 #include "ns3/node.h"
@@ -31,6 +31,51 @@
 #include "ns3/tcp-socket-factory.h"
 #include "ns3/boolean.h"
 #include "mybulk-send-application.h"
+#include "ns3/callback.h"
+
+
+extern uint64_t tx_bytes;
+extern int tcp_mss;
+extern std::string root_dir;
+extern bool enable_rto_trace;
+extern bool enable_rtt_trace;
+extern bool enable_advwnd_trace;
+extern bool enable_cwnd_trace;
+extern bool enable_cwnd_inflate_trace;
+extern bool enable_tx_throughput_stats;
+
+static void tx_trace(ns3::Ptr<const ns3::Packet> p, const ns3::TcpHeader& header,ns3::Ptr<const ns3::TcpSocketBase> socket){
+    tx_bytes+=p->GetSize();
+}
+static void rto_trace(ns3::Time old_val, ns3::Time new_val){
+    static std::ofstream thr(root_dir + "rto.trace", std::ios::out | std::ios::app);
+    ns3::Time curtime=ns3::Now();
+    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
+}
+
+static void rtt_trace(ns3::Time old_val, ns3::Time new_val){
+    static std::ofstream thr(root_dir + "rtt.trace", std::ios::out | std::ios::app);
+    ns3::Time curtime=ns3::Now();
+    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
+}
+
+static void advwnd_trace(uint32_t old_val, uint32_t new_val){
+    static std::ofstream thr(root_dir + "advwnd.trace", std::ios::out | std::ios::app);
+    ns3::Time curtime=ns3::Now();
+    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
+}
+
+static void cwnd_trace(uint32_t old_val, uint32_t new_val){
+    static std::ofstream thr(root_dir + "cwnd.trace", std::ios::out | std::ios::app);
+    ns3::Time curtime=ns3::Now();
+    thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
+}
+
+static void cwnd_inflated_trace(uint32_t old_val, uint32_t new_val){
+    static std::ofstream thr(root_dir + "cwnd_inflated.trace", std::ios::out | std::ios::app);
+    ns3::Time curtime=ns3::Now();
+    thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
+}
 
 namespace ns3 {
 
@@ -294,6 +339,19 @@ void MyBulkSendApplication::ConnectionSucceeded (Ptr<Socket> socket)
   Address from, to;
   socket->GetSockName (from);
   socket->GetPeerName (to);
+  Ptr<TcpSocketBase> tcpSocket=DynamicCast<TcpSocketBase,Socket>(socket);
+  if(enable_tx_throughput_stats)
+  tcpSocket->TraceConnectWithoutContext("Tx",MakeCallback(&tx_trace));
+  if(enable_rto_trace)
+  tcpSocket->TraceConnectWithoutContext("RTO",MakeCallback(&rto_trace));
+  if(enable_rtt_trace)
+  tcpSocket->TraceConnectWithoutContext("RTT",MakeCallback(&rtt_trace));
+  if(enable_advwnd_trace)
+  tcpSocket->TraceConnectWithoutContext("AdvWND",MakeCallback(&advwnd_trace));
+  if(enable_cwnd_trace)
+  tcpSocket->TraceConnectWithoutContext("CongestionWindow",MakeCallback(&cwnd_trace));
+  if(enable_cwnd_inflate_trace)
+  tcpSocket->TraceConnectWithoutContext("CongestionWindowInflated",MakeCallback(&cwnd_inflated_trace));
   SendData (from, to);
 }
 
