@@ -101,10 +101,15 @@ main(int argc, char* argv[]){
     clientApps.Stop(Seconds(1.0+simulation_time));
     
     
+    
 
 
 
     lteHepler->EnableTraces();
+
+    Simulator::Stop(Seconds(2.0+simulation_time));
+    Simulator::Run();
+    Simulator::Destroy();
 
 
     print_stats();

@@ -10,6 +10,19 @@ if ! command -v git &> /dev/null; then
     echo "please install git"
 fi
 
+# check python3
+if ! command -v python3 &> /dev/null; then
+    echo "please install python3"
+fi
+
+# check python3 pip
+if ! command -v pip3 &> /dev/null; then
+    echo "please install pip3"
+fi
+
+# install python module
+pip3 install numpy matplotlib
+
 # download mmwave https://github.com/nyuwireless-unipd/ns3-mmwave.git 
 MMWAVE_REPOS_URL="--branch v5.0 https://github.com/nyuwireless-unipd/ns3-mmwave.git"
 EXAMPLES_DIR="ns3-mmwave/examples/tcp-chna/"
@@ -40,7 +53,9 @@ if [ ! -f "waf" ]; then
 echo "#!/bin/bash
 cp examples/* ${EXAMPLES_DIR}
 cd ns3-mmwave
-./waf \$*" > waf
+./waf --run \"lte ../config.cfg\" || exit \"\$?\"
+cd ../
+./scripts/plot.py || exit \"\$?\"" > waf
 chmod +x waf
 fi
 

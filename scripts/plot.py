@@ -1,41 +1,67 @@
-from matplotlib import pyplot as plt
+# !pip install brewer2mpl
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import csv
 import os
 
 
-dir = "./results/"
-cwndTracesPath="cwndTraces/n0.dat"
-configPath=""
+def draw_csv_file(path):
+    basename=os.path.basename(path).split(".")[0]
+    _dir=os.path.dirname(path)+'/'
+    plt.figure(figsize=(16,10),dpi=80)
+    x=[]
+    y=[]
+    with open(path,encoding='utf-8') as f:
+        reader=csv.reader(f)
+        header=next(reader)
+        for row in reader:
+            x.append(float(row[0]))
+            y.append(float(row[1]))
+    
+    fig,ax=plt.subplots()
+    ax.plot(x,y)
+    ax.set(xlabel=header[0],ylabel=header[1],title=header[2])
+    ax.grid()
+    fig.savefig(_dir+basename)
+        
+    
+
+    
 
 
+def draw_trace_file(path):
+    print(path)
 
-with open(dir+cwndTracesPath) as f:
-    s = f.read()
-    lines = s.split('\n')
-    x = []
-    y = []
-    for line in lines[:]:
-        if not line:
-            continue
-        a, b = line.split()
-        x.append(float(a))
-        y.append(float(b))
+def process_file(path):
+    assert(os.path.isdir(path))
+    print("processing "+path)
+    _files=os.listdir(path)
+    for _file in _files:
+        extension=_file.split(".")[1]
+        if extension=="csv":
+            draw_csv_file(path+"/"+_file)
+        
 
-import numpy as np
+dir="results/"
 
-xx = np.array(x)
-yy = np.array(y)
+if not os.path.exists(dir):
+    exit(1)
+if not os.path.isdir(dir):
+    exit(1)
 
-plt.figure(dpi=256)
 
-plt.plot(
-    xx, yy,
-    '-'
-)
+files = os.listdir(dir)
+files.sort(reverse=True)
 
-plt.scatter(
-    xx, yy, s=0.1
-)
+num_file=0
+for file in files:
+    num_file+=1
 
-plt.xlabel(r'time(s)')
-plt.ylabel(r'Congestion window')
-plt.savefig(dir+'cwnd.png')
+if num_file!=0 and os.path.isdir(dir+files[0]):
+    process_file(dir+files[0])
+else:
+    print("empty directory")
+    exit(1)
+
+

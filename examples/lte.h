@@ -120,6 +120,8 @@ int link1_mtu=1500;
 
 int send_size=512;
 
+double stats_interval=0.2;
+
 
 /* -------- trace or stats ---------------=------------*/
 bool enable_rto_trace=false;
@@ -276,7 +278,7 @@ static void print_config(){
     NS_LOG_UNCOND("tcp_bbr_probe_rtt_duration " <<tcp_bbr_probe_rtt_duration);
     NS_LOG_UNCOND("tcp_bbr_extra_ack_rtt_window_length " <<tcp_bbr_extra_ack_rtt_window_length);
     NS_LOG_UNCOND("tcp_bbr_ack_epoch_acked_reset_thresh " <<tcp_bbr_ack_epoch_acked_reset_thresh);
-
+    NS_LOG_UNCOND("simulation_time " <<simulation_time);
 }
 
 
@@ -307,6 +309,7 @@ static std::vector<std::string> parse_config_file(std::string file){
     std::string line;
     uint32_t num_line=0;
     std::vector<std::string> args;
+    args.push_back("program_name");
 
     while(getline(cfg,line)){
         trim(line);
@@ -454,8 +457,10 @@ static void config_init(int argv,char* argc[]){
     cmd.AddValue("link1_mtu","",link1_mtu);
     cmd.AddValue("enable_packet_drop_stats","",enable_packet_drop_stats);
     
-    cmd.AddValue("simulation_time","",simulation_time);
+    cmd.AddValue("simulation_time","simulation time",simulation_time);
     cmd.AddValue("send_size","",send_size);
+    std::string _stats_interval="0.2";
+    cmd.AddValue("stats_interval","",_stats_interval);
 
 
     cmd.Parse(args);
@@ -505,7 +510,7 @@ static void config_init(int argv,char* argc[]){
     char buffer [80];
     time (&rawtime);
     timeinfo = localtime (&rawtime);
-    strftime (buffer, sizeof (buffer), "%d-%m-%Y-%I-%M-%S", timeinfo);
+    strftime (buffer, sizeof (buffer), "%Y-%m-%d-%H-%M-%S", timeinfo);
     std::string currentTime (buffer);
 
     root_dir+=currentTime+"/";
@@ -514,6 +519,8 @@ static void config_init(int argv,char* argc[]){
     {
         exit (1);
     }
+
+    stats_interval=std::stod(_stats_interval);
 
     print_config();
 }

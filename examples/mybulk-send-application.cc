@@ -43,38 +43,65 @@ extern bool enable_advwnd_trace;
 extern bool enable_cwnd_trace;
 extern bool enable_cwnd_inflate_trace;
 extern bool enable_tx_throughput_stats;
-
+extern double stats_interval;
+static void tx_stats(ns3::Time prevtime){
+  static std::ofstream thr(root_dir + "tx_throutghput.csv", std::ios::out | std::ios::app);
+  static bool is_first=true;
+  if(is_first){
+    thr<<"\"time\",\"throughput\",\"Tx throughput\""<<std::endl;
+    is_first=false;
+  }
+  ns3::Time curtime=ns3::Now();
+  thr<<curtime.GetSeconds() << ","<< 8*tx_bytes/(1000*(curtime.GetSeconds()-prevtime.GetSeconds()))<<std::endl;
+  tx_bytes=0;
+  ns3::Simulator::Schedule(ns3::Seconds(stats_interval),tx_stats,curtime);
+}
 static void tx_trace(ns3::Ptr<const ns3::Packet> p, const ns3::TcpHeader& header,ns3::Ptr<const ns3::TcpSocketBase> socket){
+    static bool started_stats=false;
+    if(!started_stats){
+       ns3::Simulator::Schedule(ns3::Seconds(stats_interval),tx_stats,ns3::Now());
+       started_stats=true;
+    }
     tx_bytes+=p->GetSize();
 }
 static void rto_trace(ns3::Time old_val, ns3::Time new_val){
-    static std::ofstream thr(root_dir + "rto.trace", std::ios::out | std::ios::app);
+    static bool is_first=true;
+    static std::ofstream thr(root_dir + "rto.csv", std::ios::out | std::ios::app);
+    if(is_first){
+      thr<<"\"time\",\"value\",\"rto\""<<std::endl;
+      is_first=false;
+    }
     ns3::Time curtime=ns3::Now();
-    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
+    thr<<curtime.GetNanoSeconds() << "," << old_val << ","<<new_val<<std::endl;
 }
 
 static void rtt_trace(ns3::Time old_val, ns3::Time new_val){
-    static std::ofstream thr(root_dir + "rtt.trace", std::ios::out | std::ios::app);
+    static std::ofstream thr(root_dir + "rtt.csv", std::ios::out | std::ios::app);
     ns3::Time curtime=ns3::Now();
-    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
+    thr<<curtime.GetNanoSeconds() << " " << old_val << " "<<new_val<<std::endl;
 }
 
 static void advwnd_trace(uint32_t old_val, uint32_t new_val){
-    static std::ofstream thr(root_dir + "advwnd.trace", std::ios::out | std::ios::app);
+    static std::ofstream thr(root_dir + "advwnd.csv", std::ios::out | std::ios::app);
     ns3::Time curtime=ns3::Now();
-    thr<<curtime << " " << old_val << " "<<new_val<<std::endl;
+    thr<<curtime.GetNanoSeconds() << " " << old_val << " "<<new_val<<std::endl;
 }
 
 static void cwnd_trace(uint32_t old_val, uint32_t new_val){
-    static std::ofstream thr(root_dir + "cwnd.trace", std::ios::out | std::ios::app);
+    static bool is_first=true;
+    static std::ofstream thr(root_dir + "cwnd.csv", std::ios::out | std::ios::app);
+    if(is_first){
+      thr<<"\"time(s)\",\"cwnd(segments)\",\"cwnd\""<<std::endl; 
+      is_first=false;
+    }
     ns3::Time curtime=ns3::Now();
-    thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
+    thr<<curtime.GetSeconds() << "," << old_val/tcp_mss << ","<<new_val/tcp_mss<<std::endl;
 }
 
 static void cwnd_inflated_trace(uint32_t old_val, uint32_t new_val){
-    static std::ofstream thr(root_dir + "cwnd_inflated.trace", std::ios::out | std::ios::app);
+    static std::ofstream thr(root_dir + "cwnd_inflated.csv", std::ios::out | std::ios::app);
     ns3::Time curtime=ns3::Now();
-    thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
+    thr<<curtime.GetNanoSeconds() << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
 }
 
 namespace ns3 {
@@ -339,7 +366,7 @@ void MyBulkSendApplication::ConnectionSucceeded (Ptr<Socket> socket)
   Address from, to;
   socket->GetSockName (from);
   socket->GetPeerName (to);
-  Ptr<TcpSocketBase> tcpSocket=DynamicCast<TcpSocketBase,Socket>(socket);
+  Ptr<TcpSocketBase> tcpSocket=DynamicCast<TcpSocketBase,Socket>(m_socket);
   if(enable_tx_throughput_stats)
   tcpSocket->TraceConnectWithoutContext("Tx",MakeCallback(&tx_trace));
   if(enable_rto_trace)

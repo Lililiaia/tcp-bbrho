@@ -42,11 +42,31 @@ extern bool enable_rx_throughput_stats;
 extern bool enable_rwnd_trace;
 extern std::string root_dir;
 extern int tcp_mss;
+extern double stats_interval;
+static void rx_stats(ns3::Time prevtime){
+  static std::ofstream thr(root_dir + "rx_throutghput.csv", std::ios::out | std::ios::app);
+  static bool is_first=true;
+  if(is_first){
+    thr<<"\"time(s)\",\"throughput(Kbps)\",\"Rx throughput\""<<std::endl;
+    is_first=false;
+  }
+  ns3::Time curtime=ns3::Now();
+  thr<<curtime.GetSeconds() << ","<< 8*rx_bytes/(1000*(curtime.GetSeconds()-prevtime.GetSeconds()))<<std::endl;
+  rx_bytes=0;
+  ns3::Simulator::Schedule(ns3::Seconds(stats_interval),rx_stats,curtime);
+}
 static void rx_trace(ns3::Ptr<const ns3::Packet> p, const ns3::TcpHeader& header,ns3::Ptr<const ns3::TcpSocketBase> socket){
+    static bool started_stats=false;
+    if(!started_stats){
+       ns3::Simulator::Schedule(ns3::Seconds(stats_interval),rx_stats,ns3::Now());
+       started_stats=true;
+    }
     rx_bytes+=p->GetSize();
 }
 static void rwnd_trace(uint32_t old_val, uint32_t new_val){
+    
     static std::ofstream thr(root_dir + "rwnd.trace", std::ios::out | std::ios::app);
+    
     ns3::Time curtime=ns3::Now();
     thr<<curtime << " " << old_val/tcp_mss << " "<<new_val/tcp_mss<<std::endl;
 }
