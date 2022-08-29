@@ -8,20 +8,23 @@ fi
 # check git tool
 if ! command -v git &> /dev/null; then
     echo "please install git"
+    exit
 fi
 
 # check python3
 if ! command -v python3 &> /dev/null; then
     echo "please install python3"
+    exit
 fi
 
 # check python3 pip
 if ! command -v pip3 &> /dev/null; then
     echo "please install pip3"
+    exit
 fi
 
 # install python module
-pip3 install numpy matplotlib
+pip3 install numpy matplotlib || exit "$?"
 
 # download mmwave https://github.com/nyuwireless-unipd/ns3-mmwave.git 
 MMWAVE_REPOS_URL="--branch v5.0 https://github.com/nyuwireless-unipd/ns3-mmwave.git"
