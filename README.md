@@ -15,4 +15,4 @@ Although TCP-CNHA looks like a heuristic algorithm at present, we will still spa
 # How to use
 - `Step 1`: Clone this repository to local: `git clone https://github.com/Lililiaia/tcp-cnha.git`
 - `Step 2`: deploy simulation environment: `./install.sh`
-- `Step 3`: after execute the install shell script, a execute file named as `waf` will be created, then run `./waf`
+- `Step 3`: after execute the `install.sh` shell script, a execute file named as `waf` will be created, then run `./waf`
