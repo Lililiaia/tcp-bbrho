@@ -122,6 +122,11 @@ int send_size=512;
 
 double stats_interval=0.2;
 
+int lte_enb_a_dl_bandwidth=100;
+int lte_enb_a_ul_bandwidth=100;
+int lte_enb_b_dl_bandwidth=100;
+int lte_enb_b_ul_bandwidth=100;
+
 
 /* -------- trace or stats ---------------=------------*/
 bool enable_rto_trace=false;
@@ -461,6 +466,11 @@ static void config_init(int argv,char* argc[]){
     cmd.AddValue("send_size","",send_size);
     std::string _stats_interval="0.2";
     cmd.AddValue("stats_interval","",_stats_interval);
+    
+    cmd.AddValue("lte_enb_a_dl_bandwidth","",lte_enb_a_dl_bandwidth);
+    cmd.AddValue("lte_enb_a_ul_bandwidth","",lte_enb_a_ul_bandwidth);
+    cmd.AddValue("lte_enb_b_dl_bandwidth","",lte_enb_b_dl_bandwidth);
+    cmd.AddValue("lte_enb_b_ul_bandwidth","",lte_enb_b_ul_bandwidth);
 
 
     cmd.Parse(args);

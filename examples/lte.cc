@@ -25,7 +25,7 @@ main(int argc, char* argv[]){
     Ptr<Node> sNode = CreateObject<Node>();
     Ptr<Node> ueNode=ueNodes.Get(0);
     Ptr<Node> enbNodeA=enbNodes.Get(0);
-    Ptr<Node> enbNodeB=enbNodes.Get(0);
+    Ptr<Node> enbNodeB=enbNodes.Get(1);
 
     PointToPointHelper p2ph;
     p2ph.SetDeviceAttribute ("DataRate", DataRateValue (link1_data_rate));
@@ -69,7 +69,13 @@ main(int argc, char* argv[]){
     mobility.Install(enbNodes); //(0 0 0) (10 0 0)
     mobility.Install(ueNodes); // (0 0 0)
 
-    NetDeviceContainer enbDevs=lteHepler->InstallEnbDevice(enbNodes);
+    lteHepler->SetEnbDeviceAttribute("UlBandwidth",UintegerValue(lte_enb_a_ul_bandwidth));
+    lteHepler->SetEnbDeviceAttribute("DlBandwidth",UintegerValue(lte_enb_a_dl_bandwidth));
+    Ptr<NetDevice> enbDevA=lteHepler->InstallEnbDevice(NodeContainer(enbNodeA)).Get(0);
+    lteHepler->SetEnbDeviceAttribute("UlBandwidth",UintegerValue(lte_enb_b_ul_bandwidth));
+    lteHepler->SetEnbDeviceAttribute("DlBandwidth",UintegerValue(lte_enb_b_dl_bandwidth));
+
+    Ptr<NetDevice> enbDevB=lteHepler->InstallEnbDevice(NodeContainer(enbNodeB)).Get(1);
     NetDeviceContainer ueDevs=lteHepler->InstallUeDevice(ueNodes);
     if(enable_packet_drop_stats){
         NS_LOG_UNCOND("enbDevice and ueDevice packet loss has not been implemented");
@@ -83,7 +89,7 @@ main(int argc, char* argv[]){
     ueStaticRouting->SetDefaultRoute(epcHepler->GetUeDefaultGatewayAddress(),1);
 
     // Attach one UE to eNodeB A
-    lteHepler->Attach(ueDevs.Get(0),enbDevs.Get(0));
+    lteHepler->Attach(ueDevs.Get(0),enbDevA);
 
 
     // Install and start applications on UEs and remote host
