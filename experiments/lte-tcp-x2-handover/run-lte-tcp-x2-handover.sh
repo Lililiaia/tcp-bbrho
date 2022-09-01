@@ -22,7 +22,6 @@ if [[ ! -d $WORKSPACE ]];then
 fi
 
 # create subdir 
-export NS_LOG=LteTcpX2Handover:level_info
 python3 ./waf --run lte-tcp-x2-handover --cwd=$WORKSPACE $DEBUG || exit "$?"
 
 
@@ -53,6 +52,8 @@ echo "ploting TCP Sender throughput ..."
 python3 $ROOT_DIR/experiments/lte-tcp-x2-handover/tcp-throughput-plot.py --fileName=$WORKSPACE/stats/tcp-send.csv --plotName=$WORKSPACE/images/tcp-tx-throughput.png --title="Lte Handover TCP Sender throughput"|| echo "failed to plot TCP Sender throughput"
 echo "ploting TCP CongestionWindow ..."
 python3 $ROOT_DIR/experiments/lte-tcp-x2-handover/cwnd-plot.py --fileName=$WORKSPACE/stats/cwnd.csv --plotName=$WORKSPACE/images/cwnd.png --title="Lte Handover TCP CWND"|| echo "failed to plot TCP CongestionWindow"
+echo "ploting TCP RTT ..."
+python3 $ROOT_DIR/experiments/lte-tcp-x2-handover/rtt-plot.py --fileName=$WORKSPACE/stats/rtt.csv --plotName=$WORKSPACE/images/rtt.png --title="Lte Handover TCP RTT"|| echo "failed to plot LTE handover TCP RTT"
 
 
 

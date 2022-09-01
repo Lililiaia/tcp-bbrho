@@ -23,6 +23,7 @@ std::ofstream g_cwndTrace;
 std::ofstream g_cqiTrace;
 std::ofstream g_tcpCongStateTrace;
 std::ofstream g_positionTrace;
+std::ofstream g_rttTrace;
 
 const uint16_t numberOfUes = 1;
 const uint16_t numberOfEnbs = 2;
@@ -64,6 +65,11 @@ Time epochDuration = Seconds(1.0);
 std::string _epochDuration = "1.0s";
 int intialWindowSize = 10;
 int tcpMss = 1448;
+int enbAUlBandWidth=100;
+int enbBUlBandWidth=100;
+int enbADlBandWidth=100;
+int enbBDlBandWidth=100;
+
 
 void ReportProgress(Time reportingInterval);
 uint32_t ContextToNodeId(std::string context);
@@ -111,6 +117,8 @@ void CongStateTrace(const TcpSocketState::TcpCongState_t oldValue, const TcpSock
 
 void TracePosition(Ptr<Node> ue, Time interval);
 
+void check_parse();
+
 int main(int argc, char *argv[])
 {
 
@@ -134,7 +142,14 @@ int main(int argc, char *argv[])
     cmd.AddValue("epochDuration", "Epoch duration.", _epochDuration);
     cmd.AddValue("intialWindowSize", "Initial window size.", intialWindowSize);
     cmd.AddValue("tcpMss", "TCP segment size.", tcpMss);
+    cmd.AddValue("enbAUlBandWidth", "uplink bandwidth(RB) of enb A.", enbAUlBandWidth);
+    cmd.AddValue("enbBUlBandWidth", "uplink bandwidth(RB) of enb B.", enbBUlBandWidth);
+    cmd.AddValue("enbADlBandWidth", "downlink bandwidth(RB) of enb A.", enbADlBandWidth);
+    cmd.AddValue("enbBDlBandWidth", "downlink bandwidth(RB) of enb B.", enbBDlBandWidth);
+
     cmd.Parse(parse_config_file("lte-tcp-x2-handover.conf"));
+
+    check_parse();
 
     positionTracingInterval = Time(_positionTracingInterval);
     reportingInterval = Time(_reportingInterval);
@@ -162,8 +177,10 @@ int main(int argc, char *argv[])
     if (verbose)
     {
         LogComponentEnable("EpcX2", logLevel);
+        LogComponentEnable("LteTcpX2Handover", logLevel);
         LogComponentEnable("A2A4RsrqHandoverAlgorithm", logLevel);
         LogComponentEnable("A3RsrpHandoverAlgorithm", logLevel);
+        NS_LOG_UNCOND("enable verbose");
     }
     if (rlcBearer == "RlcSmAlways")
     {   
@@ -208,6 +225,9 @@ int main(int argc, char *argv[])
     g_cwndTrace << "\"time\",\"cwnd\"" << std::endl;
     g_cwndTrace << std::setw(7) << std::setprecision(3) << std::fixed << 1.0
                 << "," << std::setw(5) << intialWindowSize << std::endl;
+
+    g_rttTrace.open("rtt.csv", std::ofstream::out);
+    g_rttTrace << "\"time\",\"rtt\"" << std::endl;
 
     Ptr<LteHelper> lteHelper = CreateObject<LteHelper>();
     Ptr<PointToPointEpcHelper> epcHelper = CreateObject<PointToPointEpcHelper>();
@@ -285,6 +305,10 @@ int main(int argc, char *argv[])
     // Install LTE Devices in eNB and UEs
     Config::SetDefault("ns3::LteEnbPhy::TxPower", DoubleValue(enbTxPowerDbm));
     NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice(enbNodes);
+    DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(0))->SetAttribute("UlBandwidth",UintegerValue(enbAUlBandWidth));
+    DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(0))->SetAttribute("DlBandwidth",UintegerValue(enbADlBandWidth));
+    DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(1))->SetAttribute("UlBandwidth",UintegerValue(enbBUlBandWidth));
+    DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(1))->SetAttribute("DlBandwidth",UintegerValue(enbBDlBandWidth));
     NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice(ueNodes);
 
     // Install the IP stack on the UEs
@@ -531,6 +555,14 @@ void rto_trace(ns3::Time old_val, ns3::Time new_val)
 }
 void rtt_trace(ns3::Time old_val, ns3::Time new_val)
 {
+    static bool first=true;
+    if(first){
+        g_rttTrace << std::setw(7) << std::setprecision(3) << std::fixed << 1.0
+                << "," << std::setw(5) << old_val.GetMilliSeconds() << std::endl;
+        first=false;
+    }
+    g_rttTrace << std::setw(7) << std::setprecision(3) << std::fixed << Simulator::Now().GetSeconds()
+                << "," << std::setw(5) << new_val.GetMilliSeconds() << std::endl;
 }
 void advwnd_trace(uint32_t old_val, uint32_t new_val)
 {
@@ -567,4 +599,8 @@ void ReportProgress(Time reportingInterval)
 {
     NS_LOG_INFO("*** Simulation time: " << std::fixed << std::setprecision(1) << Simulator::Now().GetSeconds() << "s");
     Simulator::Schedule(reportingInterval, &ReportProgress, reportingInterval);
+}
+
+void check_parse(){
+
 }

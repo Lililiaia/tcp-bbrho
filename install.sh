@@ -63,7 +63,7 @@ fi
 cp -r examples/* $EXAMPLES_DIR
 
 cd ns3-mmwave/
-./waf configure --disable-python --enable-examples -d optimized && ./waf build || exit "$?"
+./waf configure --disable-python --enable-examples && ./waf build || exit "$?"
 cd ../
 
 touch installed.ok
