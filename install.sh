@@ -54,11 +54,11 @@ cd ../
 # create a execute file named as waf
 if [ ! -f "waf" ]; then
 echo "#!/bin/bash
-cp examples/* ${EXAMPLES_DIR}
+cp examples/* ${EXAMPLES_DIR} -r
 cd ns3-mmwave
 ./waf --run \"lte ../config.cfg\" || exit \"\$?\"
 cd ../
-./scripts/plot.py || exit \"\$?\"" > waf
+python3 ./scripts/plot.py || exit \"\$?\"" > waf
 chmod +x waf
 fi
 

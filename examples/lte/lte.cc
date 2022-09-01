@@ -3,6 +3,24 @@
 NS_LOG_COMPONENT_DEFINE("ltetest");
 
 
+/*
+    after TCP establish connection
+    inter_handover_gap = 1s 
+    num=1
+*/
+void handover_schedule(Ptr<LteHelper> lteHepler, Ptr<NetDevice> ueDev, Ptr<NetDevice> senbDev, Ptr<NetDevice> tendDev,Time interHandoverGap, int num){
+    if(num>0){
+        NS_ASSERT_MSG(ueDev!=0,"ueDev is a nullptr");
+        NS_ASSERT_MSG(lteHepler!=0,"lteHepler is a nullptr");
+        NS_ASSERT_MSG(senbDev!=0,"senbDev is a nullptr");
+        NS_ASSERT_MSG(tendDev!=0,"tendDev is a nullptr");
+        //lteHelper->HandoverRequest (MilliSeconds (300), ueLteDevs.Get (0), enbLteDevs.Get (0), enbLteDevs.Get (1));
+        lteHepler->HandoverRequest(interHandoverGap,ueDev,senbDev,tendDev);
+        NS_LOG_UNCOND(Now()<<" send a handover request");
+        Simulator::Schedule(interHandoverGap,handover_schedule,lteHepler,ueDev,tendDev,senbDev,interHandoverGap,num-1);
+    }
+}
+
 
 
 int
@@ -75,7 +93,7 @@ main(int argc, char* argv[]){
     lteHepler->SetEnbDeviceAttribute("UlBandwidth",UintegerValue(lte_enb_b_ul_bandwidth));
     lteHepler->SetEnbDeviceAttribute("DlBandwidth",UintegerValue(lte_enb_b_dl_bandwidth));
 
-    Ptr<NetDevice> enbDevB=lteHepler->InstallEnbDevice(NodeContainer(enbNodeB)).Get(1);
+    Ptr<NetDevice> enbDevB=lteHepler->InstallEnbDevice(NodeContainer(enbNodeB)).Get(0);
     NetDeviceContainer ueDevs=lteHepler->InstallUeDevice(ueNodes);
     if(enable_packet_drop_stats){
         NS_LOG_UNCOND("enbDevice and ueDevice packet loss has not been implemented");
@@ -91,6 +109,9 @@ main(int argc, char* argv[]){
     // Attach one UE to eNodeB A
     lteHepler->Attach(ueDevs.Get(0),enbDevA);
 
+    // Add x2 interface
+    lteHepler->AddX2Interface (enbNodes);
+
 
     // Install and start applications on UEs and remote host
     MyBulkSendHelper bh("ns3::TcpSocketFactory",InetSocketAddress(ueIpIface.GetAddress(0),5000));
@@ -105,15 +126,22 @@ main(int argc, char* argv[]){
     clientApps.Start(Seconds(1.0));
     serverApps.Stop(Seconds(1.0+simulation_time));
     clientApps.Stop(Seconds(1.0+simulation_time));
+
     
     
-    
+    /* 
+        2.0 
+    */
+    Simulator::Schedule(Seconds(10.0),handover_schedule,lteHepler,ueDevs.Get(0),enbDevA,enbDevB,Seconds(1.0),1);
 
 
 
     lteHepler->EnableTraces();
 
+
+
     Simulator::Stop(Seconds(2.0+simulation_time));
+
     Simulator::Run();
     Simulator::Destroy();
 
