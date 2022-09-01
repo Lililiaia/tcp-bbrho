@@ -51,6 +51,8 @@ echo "ploting TCP Receiver throughput ..."
 python3 $ROOT_DIR/experiments/lte-tcp-x2-handover/tcp-throughput-plot.py --fileName=$WORKSPACE/stats/tcp-receive.csv --plotName=$WORKSPACE/images/tcp-rx-throughput.png --title="Lte Handover TCP Receiver throughput"|| echo "failed to plot TCP Receiver throughput"
 echo "ploting TCP Sender throughput ..."
 python3 $ROOT_DIR/experiments/lte-tcp-x2-handover/tcp-throughput-plot.py --fileName=$WORKSPACE/stats/tcp-send.csv --plotName=$WORKSPACE/images/tcp-tx-throughput.png --title="Lte Handover TCP Sender throughput"|| echo "failed to plot TCP Sender throughput"
+echo "ploting TCP CongestionWindow ..."
+python3 $ROOT_DIR/experiments/lte-tcp-x2-handover/cwnd-plot.py --fileName=$WORKSPACE/stats/cwnd.csv --plotName=$WORKSPACE/images/cwnd.png --title="Lte Handover TCP CWND"|| echo "failed to plot TCP CongestionWindow"
 
 
 

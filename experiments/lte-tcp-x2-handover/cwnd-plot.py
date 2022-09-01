@@ -14,7 +14,6 @@ args = parser.parse_args()
 
 times=[]
 value=[]
-timestep = 0.0
 current_time = 0
 
 if args.timestep is not None:
@@ -28,16 +27,13 @@ for line in fd:
     if line == "":
         continue
     timestamp = float(l[0].strip())
-    if (timestamp < (current_time + timestep)):
-        continue
-    else:
-        times.append(current_time + timestep)
-        value.append(int(l[1].strip()))
+    times.append(timestamp)
+    value.append(int(l[1].strip()))
     
 fd.close()
 
 
-if len(time) == 0:
+if len(times) == 0:
     print("No data points found, exiting ... ")
     sys.exit(1)
 
