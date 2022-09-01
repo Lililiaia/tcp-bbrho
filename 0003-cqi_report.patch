@@ -1,0 +1,32 @@
+From 45ca572edf14b5e2d2f531c635afedc4cf1694c4 Mon Sep 17 00:00:00 2001
+From: root <root@localhost.localdomain>
+Date: Thu, 1 Sep 2022 07:39:35 -0400
+Subject: [PATCH 3/3] cqi_report
+
+---
+ src/lte/model/rr-ff-mac-scheduler.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/lte/model/rr-ff-mac-scheduler.h b/src/lte/model/rr-ff-mac-scheduler.h
+index 298526ef..0954b479 100644
+--- a/src/lte/model/rr-ff-mac-scheduler.h
++++ b/src/lte/model/rr-ff-mac-scheduler.h
+@@ -30,6 +30,7 @@
+ #include <ns3/lte-common.h>
+ #include <ns3/lte-amc.h>
+ #include <ns3/lte-ffr-sap.h>
++#include <ns3/traced-callback.h>
+ 
+ #define HARQ_PROC_NUM 8
+ #define HARQ_DL_TIMEOUT 11
+@@ -351,6 +352,7 @@ private:
+   std::vector <struct RachListElement_s> m_rachList; ///< RACH list
+   std::vector <uint16_t> m_rachAllocationMap; ///< RACH allocation map
+   uint8_t m_ulGrantMcs; ///< MCS for UL grant (default 0)
++  TracedCallback<uint16_t, uint8_t> m_widebandCqiReport;
+ };
+ 
+ } // namespace ns3
+-- 
+2.27.0
+

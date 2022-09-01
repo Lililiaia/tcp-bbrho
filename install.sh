@@ -52,6 +52,7 @@ fi
 cd ns3-mmwave/
 git am ../0001-dpdk.patch || exit -e "${RED}Error${NC}: can not put dpdk patch into mmwave"
 git am ../0002-cqi_report.patch || exit -e "${RED}Error${NC}: can not put cqi report patch into mmwave"
+git am ../0003-cqi_report.patch || exit -e "${RED}Error${NC}: can not put cqi report patch into mmwave"
 cd ../
 # copy examples into ns3-mmwave/examples/tcp-cnha/
 if [ ! -d $EXAMPLES_DIR ];then
