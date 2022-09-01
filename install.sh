@@ -47,20 +47,21 @@ if [ ! -d "ns3-mmwave/" ];then
     git clone $MMWAVE_REPOS_URL || exit -e "${RED}Error${NC}: $?"
 fi
 
+
+# configurating waf and put a patch
+cd ns3-mmwave/
+git am ../0001-dpdk.patch || exit -e "${RED}Error${NC}: can not put dpdk patch into mmwave"
+git am ../0002-cqi_report.patch || exit -e "${RED}Error${NC}: can not put cqi report patch into mmwave"
+cd ../
 # copy examples into ns3-mmwave/examples/tcp-cnha/
 if [ ! -d $EXAMPLES_DIR ];then
     echo "Create tcp-chna directory.."
     mkdir ${EXAMPLES_DIR} || exit -e "${RED}Error${NC}: $?"
 fi
 
-cp examples/* $EXAMPLES_DIR
+cp -r examples/* $EXAMPLES_DIR
 
-
-
-# configurating waf and put a patch
 cd ns3-mmwave/
-git am ../0001-dpdk.patch || exit -e "${RED}Error${NC}: can not put dpdk patch into mmwave"
-git am ../0001-cqi_report.patch || exit -e "${RED}Error${NC}: can not put cqi report patch into mmwave"
 ./waf configure --disable-python --enable-examples -d optimized && ./waf build || exit "$?"
 cd ../
 

@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
     g_positionTrace << "\"time\",\"X\",\"Y\",\"Z\"" << std::endl;
     g_cwndTrace.open("cwnd.csv", std::ofstream::out);
     g_cwndTrace << "\"time\",\"cwnd\"" << std::endl;
-    g_cwndTrace << std::setw(7) << std::setprecision(3) << std::fixed << 0.0
+    g_cwndTrace << std::setw(7) << std::setprecision(3) << std::fixed << 1.0
                 << "," << std::setw(5) << intialWindowSize << std::endl;
 
     Ptr<LteHelper> lteHelper = CreateObject<LteHelper>();
@@ -301,7 +301,6 @@ int main(int argc, char *argv[])
     }
 
     MyBulkSendHelper ftpServer("ns3::TcpSocketFactory", Address());
-
     AddressValue remoteAddress(InetSocketAddress(ueIpIfaces.GetAddress(0), port));
     ftpServer.SetAttribute("Remote", remoteAddress);
     ftpServer.SetAttribute("MaxBytes", UintegerValue(ftpSize));
