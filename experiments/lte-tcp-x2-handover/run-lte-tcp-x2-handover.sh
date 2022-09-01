@@ -56,4 +56,7 @@ python3 $ROOT_DIR/experiments/lte-tcp-x2-handover/tcp-throughput-plot.py --fileN
 
 
 # make all files readonly
-chmod a=r $WORKSPACE/*
+chmod a=r $WORKSPACE/stats/*
+chmod a=r $WORKSPACE/traces/*
+chmod a=r $WORKSPACE/images/*
+chmod a=r $WORKSPACE/*.conf

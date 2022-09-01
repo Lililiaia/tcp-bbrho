@@ -12,9 +12,10 @@ parser.add_argument("--timestep", help="timestep resolution in seconds (default 
 parser.add_argument("--title", help="title string", default="LTE handover TCP CWND")
 args = parser.parse_args()
 
-time=[]
+times=[]
 value=[]
 timestep = 0.0
+current_time = 0
 
 if args.timestep is not None:
     timestep = float(args.timestep)
@@ -26,8 +27,13 @@ for line in fd:
     l = line.strip().split(",")
     if line == "":
         continue
-    time.append(float(l[0].strip()))
-    value.append(float(l[1].strip()))
+    timestamp = float(l[0].strip())
+    if (timestamp < (current_time + timestep)):
+        continue
+    else:
+        times.append(current_time + timestep)
+        value.append(int(l[1].strip()))
+    
 fd.close()
 
 
@@ -35,4 +41,13 @@ if len(time) == 0:
     print("No data points found, exiting ... ")
     sys.exit(1)
 
-plt.scatter(time, value, marker='.', label='cell 1', color='red')
+plt.plot(times, value)
+plt.xlabel('Time (s)')
+plt.ylabel('Segments')
+plt.ylim([-1,max(value)*1.5])
+plt.title(args.title)
+plotname = args.plotName
+plt.savefig(plotname, format='png')
+plt.close()
+
+sys.exit (0)
