@@ -29,6 +29,14 @@
 #include "ns3/seq-ts-size-header.h"
 #include "ns3/tcp-socket-base.h"
 
+extern void tx_trace(ns3::Ptr<const ns3::Packet> p, const ns3::TcpHeader& header,ns3::Ptr<const ns3::TcpSocketBase> socket);
+extern void rto_trace(ns3::Time old_val, ns3::Time new_val);
+extern void rtt_trace(ns3::Time old_val, ns3::Time new_val);
+extern void advwnd_trace(uint32_t old_val, uint32_t new_val);
+extern void cwnd_trace(uint32_t old_val, uint32_t new_val);
+extern void cwnd_inflated_trace(uint32_t old_val, uint32_t new_val);
+
+
 
 
 namespace ns3 {
@@ -135,11 +143,13 @@ private:
   Ptr<Packet>     m_unsentPacket; //!< Variable to cache unsent packet
   bool            m_enableSeqTsSizeHeader {false}; //!< Enable or disable the SeqTsSizeHeader
 
+
   /// Traced Callback: sent packets
   TracedCallback<Ptr<const Packet> > m_txTrace;
 
   /// Callback for tracing the packet Tx events, includes source, destination,  the packet sent, and header
   TracedCallback<Ptr<const Packet>, const Address &, const Address &, const SeqTsSizeHeader &> m_txTraceWithSeqTsSize;
+
 
 private:
   /**

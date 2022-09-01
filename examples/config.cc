@@ -1,8 +1,9 @@
 #include"config.h"
 
-static std::vector<std::string> parse_config_file(std::string path){
+std::vector<std::string> parse_config_file(std::string path){
+    std::string dir=getenv("CONFIG_FILE_PATH");
     std::ifstream cfg;
-    cfg.open(path,std::ios::in);
+    cfg.open(dir+"/"+path,std::ios::in);
     if(!cfg.is_open()){
         exit(1);
     }
@@ -50,7 +51,7 @@ static std::vector<std::string> parse_config_file(std::string path){
     GBR_INTEL_TRANSPORT_SYS = 84,       // Intelligent Transport Systems (<=1358 bytes)
     GBR_ELECTRIC_DIST_HV    = 85,       // Electricity Distribution- high voltage (<=255 bytes)
 */
-static int str_to_Qci(std::string s){
+int str_to_Qci(std::string s){
     trim(s);
     if(s=="GBR_CONV_VOICE"){
         return 1;

@@ -1,0 +1,68 @@
+#!/bin/bash
+
+export ROOT_DIR=$PWD
+export CONFIG_FILE_PATH=$PWD/etc
+export OUTPUT_PATH=$PWD/results
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+# check install state
+if [[ ! -f "installed.ok" ]];then
+    echo -e "${RED}Error${NC}: Please execute the ${GREEN}install.sh${NC} before run this shell script"
+    exit
+fi
+
+mkdir -p $OUTPUT_PATH
+
+ListExamples() {
+    echo "All avaiable experiments: "
+    for file in `ls experiments/`
+    do
+        echo "      ${file}"
+    done
+}
+
+ExecuteExample(){
+    run="experiments/${1}/run-${1}.sh"
+    if [[ -f "experiments/${1}/run-${1}.sh" ]];then
+        export RUN_ARGS=$2
+        bash $run
+    else
+        echo -e "${RED}Error${NC}: $1 has been not implemented, Please \`./run list\` get avaiable experiment list"
+        exit
+    fi
+}
+
+ClearResults(){
+    case $1 in
+        "all")
+            echo "Clear all results"
+            rm $OUTPUT_PATH -rf || exit "$?"
+            ;;
+        *)
+            if [[ -d "$OUTPUT_PATH/$1" ]]; then
+                rm "$OUTPUT_PATH/$1" -rf || exit "$?"
+            else
+                echo -e "${RED}Error${NC}: $OUTPUT_PATH/$1 is not exist"
+                exit
+            fi
+            ;;
+        esac
+        
+}
+
+case $1 in
+    "list")
+        ListExamples
+        ;;
+    "clear")
+        ClearResults $2
+        ;;
+    *)
+        ExecuteExample $1 $2
+        ;;
+esac
+
+
+

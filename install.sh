@@ -1,30 +1,42 @@
 #!/bin/bash 
+PKT_M_TOOL=""
+RED='\033[0;31m'
+NC='\033[0m'
 
-if [ -f installed.ok ]; then
-    echo "nothing to do"
+# check os type
+if [[ "$OSTYPE" == "linux-gnu"* ]];then
+    release_msg=$(sudo cat /etc/*release | grep "CentOS")
+    if [[ $release_msg != "" ]];then
+        PKT_M_TOOL="sudo yum"
+    else
+        PKT_M_TOOL="sudo apt-get"
+    fi
+else 
+    echo -e "${RED}Error${NC}: Only support Linux platform"
     exit
 fi
 
-# check git tool
-if ! command -v git &> /dev/null; then
-    echo "please install git"
+if [ -f installed.ok ]; then
+    echo "Nothing to do"
     exit
 fi
 
 # check python3
 if ! command -v python3 &> /dev/null; then
-    echo "please install python3"
+    echo "Install python3 ..... ..... "
+    $PKT_M_TOOL -y install python3 || exit -e "${RED}Error${NC}: $?"
     exit
 fi
 
 # check python3 pip
 if ! command -v pip3 &> /dev/null; then
     echo "please install pip3"
+    $PKT_M_TOOL -y install python3-pip || exit -e "${RED}Error${NC}: $?"
     exit
 fi
 
 # install python module
-pip3 install numpy matplotlib || exit "$?"
+pip3 install numpy matplotlib || exit -e "${RED}Error${NC}: $?"
 
 # download mmwave https://github.com/nyuwireless-unipd/ns3-mmwave.git 
 MMWAVE_REPOS_URL="--branch v5.0 https://github.com/nyuwireless-unipd/ns3-mmwave.git"
@@ -32,13 +44,13 @@ EXAMPLES_DIR="ns3-mmwave/examples/tcp-chna/"
 
 if [ ! -d "ns3-mmwave/" ];then
     echo "Downloading ns-mmwave(5.0)..."
-    git clone $MMWAVE_REPOS_URL || exit "$?"
+    git clone $MMWAVE_REPOS_URL || exit -e "${RED}Error${NC}: $?"
 fi
 
 # copy examples into ns3-mmwave/examples/tcp-cnha/
 if [ ! -d $EXAMPLES_DIR ];then
     echo "Create tcp-chna directory.."
-    mkdir ${EXAMPLES_DIR} || exit "$?"
+    mkdir ${EXAMPLES_DIR} || exit -e "${RED}Error${NC}: $?"
 fi
 
 cp examples/* $EXAMPLES_DIR
@@ -47,19 +59,9 @@ cp examples/* $EXAMPLES_DIR
 
 # configurating waf and put a patch
 cd ns3-mmwave/
-git am ../0001-dpdk.patch || exit "can not put dpdk patch into mmwave"
-./waf configure --disable-python --enable-examples && ./waf build || exit "$?"
+git am ../0001-dpdk.patch || exit -e "${RED}Error${NC}: can not put dpdk patch into mmwave"
+git am ../0001-cqi_report.patch || exit -e "${RED}Error${NC}: can not put cqi report patch into mmwave"
+./waf configure --disable-python --enable-examples -d optimized && ./waf build || exit "$?"
 cd ../
-
-# create a execute file named as waf
-if [ ! -f "waf" ]; then
-echo "#!/bin/bash
-cp examples/* ${EXAMPLES_DIR} -r
-cd ns3-mmwave
-./waf --run \"lte ../config.cfg\" || exit \"\$?\"
-cd ../
-python3 ./scripts/plot.py || exit \"\$?\"" > waf
-chmod +x waf
-fi
 
 touch installed.ok

@@ -3,8 +3,10 @@
 #include<fstream>
 #include "ns3/core-module.h"
 
-static std::vector<std::string> parse_config_file(std::string path);
-static int str_to_Qci(std::string s);
+
+
+extern std::vector<std::string> parse_config_file(std::string path);
+extern int str_to_Qci(std::string s);
 
 // trim from start (in place)
 static inline void ltrim(std::string &s) {

@@ -1,0 +1,35 @@
+From 44dceeddea29c37572929e707743b75aaad6b30d Mon Sep 17 00:00:00 2001
+From: root <root@localhost.localdomain>
+Date: Wed, 31 Aug 2022 23:50:28 -0400
+Subject: [PATCH 2/2] cqi_report
+
+---
+ src/lte/model/rr-ff-mac-scheduler.cc | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/lte/model/rr-ff-mac-scheduler.cc b/src/lte/model/rr-ff-mac-scheduler.cc
+index cf53e123..fc736c1d 100644
+--- a/src/lte/model/rr-ff-mac-scheduler.cc
++++ b/src/lte/model/rr-ff-mac-scheduler.cc
+@@ -103,6 +103,10 @@ RrFfMacScheduler::GetTypeId (void)
+                    UintegerValue (0),
+                    MakeUintegerAccessor (&RrFfMacScheduler::m_ulGrantMcs),
+                    MakeUintegerChecker<uint8_t> ())
++    .AddTraceSource ("WidebandCqiReport",
++                     "Wideband CQI report received",
++                     MakeTraceSourceAccessor (&RrFfMacScheduler::m_widebandCqiReport),
++                     "ns3::RrFfMacScheduler::WidebandCqiReportTracedCallback")
+   ;
+   return tid;
+ }
+@@ -1124,6 +1128,7 @@ RrFfMacScheduler::DoSchedDlCqiInfoReq (const struct FfMacSchedSapProvider::Sched
+               itTimers = m_p10CqiTimers.find (rnti);
+               (*itTimers).second = m_cqiTimersThreshold;
+             }
++          m_widebandCqiReport (rnti, params.m_cqiList.at (i).m_wbCqi.at(0));
+         }
+       else if ( params.m_cqiList.at (i).m_cqiType == CqiListElement_s::A30 )
+         {
+-- 
+2.27.0
+
