@@ -307,5 +307,13 @@ main (int argc, char* argv[])
     Config::Connect ("/NodeList/4/DeviceList/*/ComponentCarrierMapUe/*/LteUePhy/ReportUeMeasurements",
                    MakeCallback (&NotifyUeMeasurements));
     
+    Config::Connect ("/NodeList/4/ApplicationList/*/$ns3::PacketSink/Rx",
+                   MakeCallback (&NotifyPacketSinkRx));
     
+    Config::Connect ("/NodeList/*/DeviceList/*/$ns3::LteEnbNetDevice/ComponentCarrierMap/*/FfMacScheduler/$ns3::RrFfMacScheduler/WidebandCqiReport",
+                   MakeCallback (&NotifyCqiReport));
+    
+    
+    
+
 }
