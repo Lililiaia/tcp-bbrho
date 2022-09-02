@@ -24,6 +24,7 @@ std::ofstream g_cqiTrace;
 std::ofstream g_tcpCongStateTrace;
 std::ofstream g_positionTrace;
 std::ofstream g_rttTrace;
+std::ofstream g_keyStats;
 
 const uint16_t numberOfUes = 1;
 const uint16_t numberOfEnbs = 2;
@@ -69,6 +70,15 @@ int enbAUlBandWidth=100;
 int enbBUlBandWidth=100;
 int enbADlBandWidth=100;
 int enbBDlBandWidth=100;
+std::string S1uLinkDataRate="10Gb/s";
+std::string S1uLinkDelay="0";
+int S1uLinkMtu=2000;
+std::string S1apLinkDataRate="10Gb/s";
+std::string S1apLinkDelay="0";
+int S1apLinkMtu=2000;
+std::string X2LinkDataRate="10Gb/s";
+std::string X2LinkDelay="0";
+int X2LinkMtu=3000;
 
 
 void ReportProgress(Time reportingInterval);
@@ -147,6 +157,15 @@ int main(int argc, char *argv[])
     cmd.AddValue("enbADlBandWidth", "downlink bandwidth(RB) of enb A.", enbADlBandWidth);
     cmd.AddValue("enbBDlBandWidth", "downlink bandwidth(RB) of enb B.", enbBDlBandWidth);
 
+    cmd.AddValue("S1uLinkDataRate", "downlink bandwidth(RB) of enb B.", S1uLinkDataRate);
+    cmd.AddValue("S1uLinkDelay", "downlink bandwidth(RB) of enb B.", S1uLinkDelay);
+    cmd.AddValue("S1uLinkMtu", "downlink bandwidth(RB) of enb B.", S1uLinkMtu);
+    cmd.AddValue("S1apLinkDataRate", "downlink bandwidth(RB) of enb B.",S1apLinkDataRate);
+    cmd.AddValue("S1apLinkDelay", "downlink bandwidth(RB) of enb B.", S1apLinkDelay);
+    cmd.AddValue("S1apLinkMtu", "downlink bandwidth(RB) of enb B.", S1apLinkMtu);
+    cmd.AddValue("X2LinkDataRate", "downlink bandwidth(RB) of enb B.", X2LinkDataRate);
+    cmd.AddValue("X2LinkDelay", "downlink bandwidth(RB) of enb B.", X2LinkDelay);
+    cmd.AddValue("X2LinkMtu", "downlink bandwidth(RB) of enb B.", X2LinkMtu);
     cmd.Parse(parse_config_file("lte-tcp-x2-handover.conf"));
 
     check_parse();
@@ -229,8 +248,21 @@ int main(int argc, char *argv[])
     g_rttTrace.open("rtt.csv", std::ofstream::out);
     g_rttTrace << "\"time\",\"rtt\"" << std::endl;
 
+    g_keyStats.open("stats.st", std::ofstream::out);
+
     Ptr<LteHelper> lteHelper = CreateObject<LteHelper>();
     Ptr<PointToPointEpcHelper> epcHelper = CreateObject<PointToPointEpcHelper>();
+    epcHelper->SetAttribute("S1uLinkDataRate",DataRateValue(DataRate(S1uLinkDataRate)));
+    epcHelper->SetAttribute("S1uLinkDelay",TimeValue(Time(S1uLinkDelay)));
+    epcHelper->SetAttribute("S1uLinkMtu",UintegerValue(S1uLinkMtu));
+    
+    epcHelper->SetAttribute("S1apLinkDataRate",DataRateValue(DataRate(S1apLinkDataRate)));
+    epcHelper->SetAttribute("S1apLinkDelay",TimeValue(Time(S1apLinkDelay)));
+    epcHelper->SetAttribute("S1apLinkMtu",UintegerValue(S1apLinkMtu));
+
+    epcHelper->SetAttribute("X2LinkDataRate",DataRateValue(DataRate(X2LinkDataRate)));
+    epcHelper->SetAttribute("X2LinkDelay",TimeValue(Time(X2LinkDelay)));
+    epcHelper->SetAttribute("X2LinkMtu",UintegerValue(X2LinkMtu));
     lteHelper->SetEpcHelper(epcHelper);
     lteHelper->SetSchedulerType("ns3::" + lteSchedulerType);
 
@@ -378,7 +410,7 @@ int main(int argc, char *argv[])
 
     Config::Connect("/NodeList/*/DeviceList/*/LteUeRrc/ConnectionEstablished",
                     MakeCallback(&NotifyConnectionEstablishedUe));
-
+    
     Config::Connect("/NodeList/*/DeviceList/*/LteEnbRrc/HandoverStart",
                     MakeCallback(&NotifyHandoverStartEnb));
 
@@ -479,6 +511,8 @@ void NotifyHandoverStartUe(std::string context,
                                       << ": previously connected to CellId " << cellid
                                       << " with RNTI " << rnti
                                       << ", doing handover to CellId " << targetCellId);
+    g_keyStats << "Handover-Start-Ue-Time " << Simulator::Now().GetSeconds()<<std::endl;
+
 }
 
 void NotifyHandoverEndOkUe(std::string context,
@@ -492,6 +526,8 @@ void NotifyHandoverEndOkUe(std::string context,
                                       << " UE IMSI " << imsi
                                       << ": successful handover to CellId " << cellid
                                       << " with RNTI " << rnti);
+    
+    g_keyStats << "Handover-End-Ok-Ue-Time " << Simulator::Now().GetSeconds()<<std::endl;
 }
 
 void NotifyHandoverStartEnb(std::string context,
@@ -507,6 +543,7 @@ void NotifyHandoverStartEnb(std::string context,
                                       << ": start handover of UE with IMSI " << imsi
                                       << " RNTI " << rnti
                                       << " to CellId " << targetCellId);
+    g_keyStats << "Handover-Start-Enb-Time " << Simulator::Now().GetSeconds()<<std::endl;
 }
 
 void NotifyHandoverEndOkEnb(std::string context,
@@ -520,6 +557,7 @@ void NotifyHandoverEndOkEnb(std::string context,
                                       << " eNB CellId " << cellid
                                       << ": completed handover of UE with IMSI " << imsi
                                       << " RNTI " << rnti);
+    g_keyStats << "Handover-End-Ok-Enb-Time " << Simulator::Now().GetSeconds()<<std::endl;
 }
 
 void NotifyUeMeasurements(std::string context, uint16_t rnti, uint16_t cellId, double rsrpDbm, double rsrqDbm, bool servingCell, uint8_t ccId)
