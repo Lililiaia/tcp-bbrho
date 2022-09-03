@@ -5,7 +5,7 @@
 
 
 
-extern std::vector<std::string> parse_config_file(std::string path);
+extern std::vector<std::string> parse_config_file();
 extern int str_to_Qci(std::string s);
 
 // trim from start (in place)

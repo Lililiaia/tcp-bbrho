@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     cmd.AddValue("X2LinkDataRate", "downlink bandwidth(RB) of enb B.", X2LinkDataRate);
     cmd.AddValue("X2LinkDelay", "downlink bandwidth(RB) of enb B.", X2LinkDelay);
     cmd.AddValue("X2LinkMtu", "downlink bandwidth(RB) of enb B.", X2LinkMtu);
-    cmd.Parse(parse_config_file("lte-tcp-x2-handover-multi-ue.conf"));
+    cmd.Parse(parse_config_file());
 
     check_parse();
 
@@ -343,8 +343,12 @@ int main(int argc, char *argv[])
     NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice(enbNodes);
     DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(0))->SetAttribute("UlBandwidth",UintegerValue(enbAUlBandWidth));
     DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(0))->SetAttribute("DlBandwidth",UintegerValue(enbADlBandWidth));
+    std::cout<< "enb A:UlBandwidth="<<DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(0))->GetUlBandwidth()<<std::endl;
+    std::cout<< "enb A:DlBandwidth="<<DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(0))->GetDlBandwidth()<<std::endl;
     DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(1))->SetAttribute("UlBandwidth",UintegerValue(enbBUlBandWidth));
     DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(1))->SetAttribute("DlBandwidth",UintegerValue(enbBDlBandWidth));
+    std::cout<< "enb B:UlBandwidth="<<DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(1))->GetUlBandwidth()<<std::endl;
+    std::cout<< "enb B:DlBandwidth="<<DynamicCast<LteEnbNetDevice,NetDevice>(enbLteDevs.Get(1))->GetDlBandwidth()<<std::endl;
     NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice(ueNodes);
 
     // Install the IP stack on the UEs

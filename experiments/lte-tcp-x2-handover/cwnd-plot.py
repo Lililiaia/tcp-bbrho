@@ -33,6 +33,9 @@ for line in fd:
 fd.close()
 
 
+print(max(value))
+
+
 if len(times) == 0:
     print("No data points found, exiting ... ")
     sys.exit(1)
@@ -40,6 +43,7 @@ if len(times) == 0:
 plt.plot(times, value)
 plt.xlabel('Time (s)')
 plt.ylabel('Segments')
+#plt.yscale('symlog')
 plt.ylim([-1,max(value)*1.5])
 plt.title(args.title)
 plotname = args.plotName

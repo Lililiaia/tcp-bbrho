@@ -1,9 +1,9 @@
 #include"config.h"
 
-std::vector<std::string> parse_config_file(std::string path){
-    std::string dir=getenv("CONFIG_FILE_PATH");
+std::vector<std::string> parse_config_file(){
+    std::string dir=getenv("CONFIG_FILE");
     std::ifstream cfg;
-    cfg.open(dir+"/"+path,std::ios::in);
+    cfg.open(dir,std::ios::in);
     if(!cfg.is_open()){
         exit(1);
     }

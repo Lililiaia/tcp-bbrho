@@ -1,5 +1,6 @@
 DEBUG=""
 WORKSPACE=$OUTPUT_PATH/lte-tcp-x2-handover-multi-ue/`date +%Y%m%d-%H%M%S`
+export CONFIG_FILE=$CONFIG_FILE_PATH/lte-tcp-x2-handover-multi-ue.conf
 
 
 parse_args(){
@@ -35,7 +36,7 @@ mv $WORKSPACE/*.txt $WORKSPACE/traces/
 mv $WORKSPACE/*.pcap $WORKSPACE/traces/
 
 
-cp $CONFIG_FILE_PATH/lte-tcp-x2-handover-multi-ue.conf $WORKSPACE/
+cp $CONFIG_FILE $WORKSPACE/
 
 # plot
 echo "ploting LTE handover cqi ..."
