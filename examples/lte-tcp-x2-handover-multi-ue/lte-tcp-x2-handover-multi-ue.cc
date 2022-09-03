@@ -26,12 +26,13 @@ std::ofstream g_positionTrace;
 std::ofstream g_rttTrace;
 std::ofstream g_keyStats;
 
-const uint16_t numberOfUes = 1;
+const uint16_t numberOfUes = 2;
 const uint16_t numberOfEnbs = 2;
 
 double x2Distance = 500.0;      // m
 double yDistanceForUe = 1000.0; // m
-double speed = 20;              // m/s
+double speed1 = 20;             // m/s
+double speed2 = 20;             // m/s
 double enbTxPowerDbm = 46.0;
 std::string handoverType = "A2A4";
 std::string tcpType = "TcpBbr";
@@ -47,7 +48,7 @@ bool verbose = false;
 bool pcap = false;
 bool useIdealRrc = true;
 
-const std::string traceFilePrefix = "lte-tcp-x2-handover";
+const std::string traceFilePrefix = "lte-tcp-x2-handover-multi-ue";
 Time positionTracingInterval = Seconds(5);
 std::string _positionTracingInterval = "5s";
 Time reportingInterval = Seconds(10);
@@ -133,7 +134,8 @@ int main(int argc, char *argv[])
 {
 
     CommandLine cmd;
-    cmd.AddValue("speed", "Speed fo the UE (m/s)", speed);
+    cmd.AddValue("speed1", "Speed fo the UE (m/s)", speed1);
+    cmd.AddValue("speed2", "Speed fo the UE (m/s)", speed2);
     cmd.AddValue("x2Distance", "Distance between eNB at X2 (meters)", x2Distance);
     cmd.AddValue("yDistanceForUe", "y value(meters) for UE", yDistanceForUe);
     cmd.AddValue("enbTxPowerDbm", "Tx power(dBm) used by eNBs", enbTxPowerDbm);
@@ -166,7 +168,7 @@ int main(int argc, char *argv[])
     cmd.AddValue("X2LinkDataRate", "downlink bandwidth(RB) of enb B.", X2LinkDataRate);
     cmd.AddValue("X2LinkDelay", "downlink bandwidth(RB) of enb B.", X2LinkDelay);
     cmd.AddValue("X2LinkMtu", "downlink bandwidth(RB) of enb B.", X2LinkMtu);
-    cmd.Parse(parse_config_file("lte-tcp-x2-handover.conf"));
+    cmd.Parse(parse_config_file("lte-tcp-x2-handover-multi-ue.conf"));
 
     check_parse();
 
@@ -182,14 +184,14 @@ int main(int argc, char *argv[])
     Config::SetDefault("ns3::TcpSocket::InitialCwnd", UintegerValue(intialWindowSize));
 
     // Adjust based on speed, if motion is enabled
-    if (speed < 10 && speed != 0)
+    if (speed1 < 10 && speed1 != 0)
     {
         NS_ABORT_MSG("Select a speed at least 10 m/s, or zero");
     }
-    else if (speed >= 10)
+    else if (speed1 >= 10)
     {
         // Handover around the middle of the total simTime
-        simTime = (double)(numberOfEnbs + 1) * x2Distance / speed;
+        simTime = (double)(numberOfEnbs + 1) * x2Distance / speed1;
     }
 
     LogLevel logLevel = (LogLevel)(LOG_PREFIX_ALL | LOG_LEVEL_ALL);
@@ -332,7 +334,9 @@ int main(int argc, char *argv[])
     ueMobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
     ueMobility.Install(ueNodes);
     ueNodes.Get(0)->GetObject<MobilityModel>()->SetPosition(Vector(0, yDistanceForUe, 0));
-    ueNodes.Get(0)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(Vector(speed, 0, 0));
+    ueNodes.Get(0)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(Vector(speed1, 0, 0));
+    ueNodes.Get(1)->GetObject<MobilityModel>()->SetPosition(Vector(0, yDistanceForUe, 0));
+    ueNodes.Get(1)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(Vector(speed2, 0, 0));
 
     // Install LTE Devices in eNB and UEs
     Config::SetDefault("ns3::LteEnbPhy::TxPower", DoubleValue(enbTxPowerDbm));
@@ -360,16 +364,25 @@ int main(int argc, char *argv[])
     AddressValue remoteAddress(InetSocketAddress(ueIpIfaces.GetAddress(0), port));
     ftpServer.SetAttribute("Remote", remoteAddress);
     ftpServer.SetAttribute("MaxBytes", UintegerValue(ftpSize));
-    NS_LOG_INFO("setting up TCP flow from remote host to UE");
-    ApplicationContainer sourceApp = ftpServer.Install(remoteHost);
-    sourceApp.Start(Seconds(1));
-    sourceApp.Stop(Seconds(simTime));
+    NS_LOG_INFO("setting up TCP flow from remote host to UE1");
+    ApplicationContainer sourceApp1 = ftpServer.Install(remoteHost);
+    sourceApp1.Start(Seconds(1));
+    sourceApp1.Stop(Seconds(simTime));
+    
+    NS_LOG_INFO("setting up TCP flow from remote host to UE2");
+    ApplicationContainer sourceApp2 = ftpServer.Install(remoteHost);
+    sourceApp2.Start(Seconds(1));
+    sourceApp2.Stop(Seconds(simTime));
 
-    Address sinkLocalAddress(InetSocketAddress(Ipv4Address::GetAny(), port));
-    PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
-    ApplicationContainer sinkApp = sinkHelper.Install(ueNodes.Get(0));
-    sinkApp.Start(Seconds(1));
-    sinkApp.Stop(Seconds(simTime));
+    Address sinkLocalAddress1(InetSocketAddress(Ipv4Address::GetAny(), port));
+    PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress1);
+    ApplicationContainer sinkApp1 = sinkHelper.Install(ueNodes.Get(0));
+    sinkApp1.Start(Seconds(1));
+    sinkApp1.Stop(Seconds(simTime));
+
+    ApplicationContainer sinkApp2 = sinkHelper.Install(ueNodes.Get(1));
+    sinkApp2.Start(Seconds(1));
+    sinkApp2.Stop(Seconds(simTime));
 
     // EPS bearer Traffic Flow
     Ptr<EpcTft> tft = Create<EpcTft>();
@@ -384,6 +397,8 @@ int main(int argc, char *argv[])
         NS_ABORT_MSG("Invalid qos class indicator : " << bearerQos);
     EpsBearer bearer((EpsBearer::Qci)qci);
     lteHelper->ActivateDedicatedEpsBearer(ueLteDevs.Get(0), bearer, tft);
+    lteHelper->ActivateDedicatedEpsBearer(ueLteDevs.Get(1), bearer, tft);
+
 
     // Add X2 interface
     lteHelper->AddX2Interface(enbNodes);
@@ -438,13 +453,16 @@ int main(int argc, char *argv[])
 
     // Initiate position tracing
     Simulator::Schedule(Seconds(0), &TracePosition, ueNodes.Get(0), positionTracingInterval);
+    Simulator::Schedule(Seconds(0), &TracePosition, ueNodes.Get(1), positionTracingInterval);
 
-    Vector vUe = ueNodes.Get(0)->GetObject<MobilityModel>()->GetPosition();
+    Vector vUe1 = ueNodes.Get(0)->GetObject<MobilityModel>()->GetPosition();
+    Vector vUe2 = ueNodes.Get(1)->GetObject<MobilityModel>()->GetPosition();
     Vector vEnb1 = enbNodes.Get(0)->GetObject<MobilityModel>()->GetPosition();
     Vector vEnb2 = enbNodes.Get(1)->GetObject<MobilityModel>()->GetPosition();
 
     NS_LOG_INFO(
-        "Initial positions:  UE: (" << vUe.x << "," << vUe.y << "), "
+        "Initial positions:  UE1: (" << vUe1.x << "," << vUe1.y << "), "
+        << "UE2: (" << vUe2.x << "," << vUe2.y << "), "
         << "eNB1: (" << vEnb1.x << "," << vEnb1.y << "), "
         << "eNB2: (" << vEnb2.x << "," << vEnb2.y << ")");
     NS_LOG_INFO(
