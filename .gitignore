@@ -2,3 +2,4 @@ ns3-mmwave/
 waf
 installed.ok
 results/
+.vscode/

@@ -17,3 +17,10 @@ def build(bld):
         'config.cc',
         'mybulk-send-application.cc',
         'mybulk-send-helper.cc']
+    obj = bld.create_ns3_program('lte-tcp-x2-handover-multi-ue',
+        ['core', 'mobility', 'network', 'internet', 'applications', 'lte', 'point-to-point'])
+    obj.source = [
+        'lte-tcp-x2-handover-multi-ue/lte-tcp-x2-handover-multi-ue.cc',
+        'config.cc',
+        'mybulk-send-application.cc',
+        'mybulk-send-helper.cc']
