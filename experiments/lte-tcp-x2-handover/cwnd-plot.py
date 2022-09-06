@@ -43,7 +43,7 @@ if len(times) == 0:
 plt.plot(times, value)
 plt.xlabel('Time (s)')
 plt.ylabel('Segments')
-#plt.yscale('symlog')
+plt.yscale('symlog')
 plt.ylim([-1,max(value)*1.5])
 plt.title(args.title)
 plotname = args.plotName

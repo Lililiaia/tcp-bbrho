@@ -32,7 +32,8 @@ const uint16_t numberOfEnbs = 2;
 double x2Distance = 500.0;      // m
 double yDistanceForUe = 1000.0; // m
 double speed = 20;              // m/s
-double enbTxPowerDbm = 46.0;
+double enbATxPowerDbm = 46.0;
+double enbBTxPowerDbm = 46.0;
 std::string handoverType = "A2A4";
 std::string tcpType = "TcpBbr";
 /*
@@ -136,7 +137,8 @@ int main(int argc, char *argv[])
     cmd.AddValue("speed", "Speed fo the UE (m/s)", speed);
     cmd.AddValue("x2Distance", "Distance between eNB at X2 (meters)", x2Distance);
     cmd.AddValue("yDistanceForUe", "y value(meters) for UE", yDistanceForUe);
-    cmd.AddValue("enbTxPowerDbm", "Tx power(dBm) used by eNBs", enbTxPowerDbm);
+    cmd.AddValue("enbATxPowerDbm", "Tx power(dBm) used by eNB-A", enbATxPowerDbm);
+    cmd.AddValue("enbBTxPowerDbm", "Tx power(dBm) used by eNB-B", enbBTxPowerDbm);
     cmd.AddValue("rlcBearer", "LTE RLC Bearer mode", rlcBearer);
     cmd.AddValue("handoverType", "Handover type (A2A4 or A3Rsrp)", handoverType);
     cmd.AddValue("tcpType", "TCP congestion control algorithm(TcpBbr|TcpCubic|TcpNewReno|TcpBic)", tcpType);
@@ -335,11 +337,12 @@ int main(int argc, char *argv[])
     ueNodes.Get(0)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(Vector(speed, 0, 0));
 
     // Install LTE Devices in eNB and UEs
-    Config::SetDefault("ns3::LteEnbPhy::TxPower", DoubleValue(enbTxPowerDbm));
-    
+    Config::SetDefault("ns3::LteEnbPhy::TxPower", DoubleValue(enbATxPowerDbm));
     Config::SetDefault("ns3::LteEnbNetDevice::UlBandwidth",UintegerValue(enbAUlBandWidth));
     Config::SetDefault("ns3::LteEnbNetDevice::DlBandwidth",UintegerValue(enbADlBandWidth));
     NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice(enbNodes.Get(0));
+
+    Config::SetDefault("ns3::LteEnbPhy::TxPower", DoubleValue(enbBTxPowerDbm));
     Config::SetDefault("ns3::LteEnbNetDevice::UlBandwidth",UintegerValue(enbBUlBandWidth));
     Config::SetDefault("ns3::LteEnbNetDevice::DlBandwidth",UintegerValue(enbBDlBandWidth));
     enbLteDevs.Add(lteHelper->InstallEnbDevice(enbNodes.Get(1)));
