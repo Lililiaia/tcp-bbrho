@@ -24,3 +24,11 @@ def build(bld):
         'config.cc',
         'mybulk-send-application.cc',
         'mybulk-send-helper.cc']
+    
+    obj = bld.create_ns3_program('mmwave-tcp-x2-handover',
+        ['core', 'mobility', 'network', 'internet', 'applications', 'mmwave', 'point-to-point'])
+    obj.source = [
+        'mmwave-tcp-x2-handover/mmwave-tcp-x2-handover.cc',
+        'config.cc',
+        'mybulk-send-application.cc',
+        'mybulk-send-helper.cc']
