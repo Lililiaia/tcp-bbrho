@@ -22,13 +22,17 @@ if args.timestep is not None:
 fd = open(args.fileName,'r')
 next(fd)
 
+lasttime=0.0
 for line in fd:
     l = line.strip().split(",")
     if line == "":
         continue
     timestamp = float(l[0].strip())
-    times.append(timestamp)
-    value.append(int(l[1].strip()))
+    if timestamp !=  lasttime:
+        times.append(timestamp)
+        value.append(int(l[1].strip()))
+        lasttime=timestamp
+        #print(l[0].strip()+" "+l[1].strip())
     
 fd.close()
 
@@ -43,7 +47,7 @@ if len(times) == 0:
 plt.plot(times, value)
 plt.xlabel('Time (s)')
 plt.ylabel('Segments')
-plt.yscale('symlog')
+#plt.yscale('symlog')
 plt.ylim([-1,max(value)*1.5])
 plt.title(args.title)
 plotname = args.plotName
