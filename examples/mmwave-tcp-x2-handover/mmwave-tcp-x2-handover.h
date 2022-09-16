@@ -59,6 +59,7 @@ void ReportProgress(Time reportingInterval);
 void CongStateTrace(const TcpSocketState::TcpCongState_t oldValue, const TcpSocketState::TcpCongState_t newValue);                                                                                        
 uint32_t ContextToNodeId (std::string context);
 void ReportProgress(Time reportingInterval);
+void ChangeSpeed (Ptr<Node> n, Vector speed);
 
 
 /* 
@@ -105,8 +106,7 @@ int updateSinrEstimatePeriod;
 double updateUeSinrEstimatePeriod;
 bool noiseAndFilter;
 std::string tcpType;
-
-
+double transientDuration;
 /* 
    ******************************** Configuration arguments End ********************************
 */

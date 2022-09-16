@@ -59,6 +59,7 @@ std::ofstream g_rttTrace;
 std::ofstream g_bulkSendTx;
 std::ofstream g_packetSinkRx;
 std::ofstream g_cwndTrace;
+std::ofstream g_handover;
 
 void
 PrintGnuplottableBuildingListToFile (std::string filename)
@@ -266,6 +267,95 @@ GenerateBuildingBounds (double xArea, double yArea, double maxBuildSize, std::li
 
 }
 
+uint32_t
+ContextToNodeId (std::string context)
+{
+  std::string sub = context.substr (10);  // skip "/NodeList/"
+  uint32_t pos = sub.find ("/Device");
+  return atoi (sub.substr (0,pos).c_str ());
+}
+
+void NotifyConnectionEstablishedEnb(std::string context,
+                                    uint64_t imsi,
+                                    uint16_t cellid,
+                                    uint16_t rnti)
+{
+    g_handover<<
+        Simulator::Now().GetSeconds() << " node "
+                                      << ContextToNodeId(context)
+                                      << " eNB CellId " << cellid
+                                      << ": successful connection of UE with IMSI " << imsi
+                                      << " RNTI " << rnti;
+}
+
+void NotifyConnectionEstablishedUe(std::string context,
+                                   uint64_t imsi,
+                                   uint16_t cellid,
+                                   uint16_t rnti)
+{
+    g_handover<<Simulator::Now().GetSeconds() << " node "
+                                              << ContextToNodeId(context)
+                                              << " UE IMSI " << imsi
+                                              << ": connected to CellId " << cellid
+                                              << " with RNTI " << rnti;
+}
+
+void NotifyHandoverStartUe(std::string context,
+                           uint64_t imsi,
+                           uint16_t cellid,
+                           uint16_t rnti,
+                           uint16_t targetCellId)
+{
+    g_handover<<
+        Simulator::Now().GetSeconds() << " node "
+                                      << ContextToNodeId(context)
+                                      << " UE IMSI " << imsi
+                                      << ": previously connected to CellId " << cellid
+                                      << " with RNTI " << rnti
+                                      << ", doing handover to CellId " << targetCellId;
+}
+
+void NotifyHandoverEndOkUe(std::string context,
+                           uint64_t imsi,
+                           uint16_t cellid,
+                           uint16_t rnti)
+{
+    g_handover<<
+        Simulator::Now().GetSeconds() << " node "
+                                      << ContextToNodeId(context)
+                                      << " UE IMSI " << imsi
+                                      << ": successful handover to CellId " << cellid
+                                      << " with RNTI " << rnti;
+}
+
+void NotifyHandoverStartEnb(std::string context,
+                            uint64_t imsi,
+                            uint16_t cellid,
+                            uint16_t rnti,
+                            uint16_t targetCellId)
+{
+    g_handover<<
+        Simulator::Now().GetSeconds() << " node "
+                                      << ContextToNodeId(context)
+                                      << " eNB CellId " << cellid
+                                      << ": start handover of UE with IMSI " << imsi
+                                      << " RNTI " << rnti
+                                      << " to CellId " << targetCellId;
+}
+
+void NotifyHandoverEndOkEnb(std::string context,
+                            uint64_t imsi,
+                            uint16_t cellid,
+                            uint16_t rnti)
+{
+    g_handover<<
+        Simulator::Now().GetSeconds() << " node "
+                                      << ContextToNodeId(context)
+                                      << " eNB CellId " << cellid
+                                      << ": completed handover of UE with IMSI " << imsi
+                                      << " RNTI " << rnti;
+}
+
 void tx_trace(ns3::Ptr<const ns3::Packet> p, const ns3::TcpHeader &header, ns3::Ptr<const ns3::TcpSocketBase> socket)
 {
     g_bulkSendTx << std::setw(7) << std::setprecision(3) << std::fixed << Simulator::Now().GetSeconds()
@@ -334,7 +424,7 @@ static ns3::GlobalValue g_bufferSize ("bufferSize", "RLC tx buffer size (MB)",
 static ns3::GlobalValue g_x2Latency ("x2Latency", "Latency on X2 interface (us)",
                                      ns3::DoubleValue (500), ns3::MakeDoubleChecker<double> ());
 static ns3::GlobalValue g_mmeLatency ("mmeLatency", "Latency on MME interface (us)",
-                                      ns3::DoubleValue (10000), ns3::MakeDoubleChecker<double> ());
+                                      ns3::DoubleValue (100000), ns3::MakeDoubleChecker<double> ());
 static ns3::GlobalValue g_mobileUeSpeed ("mobileSpeed", "The speed of the UE (m/s)",
                                          ns3::DoubleValue (2), ns3::MakeDoubleChecker<double> ());
 static ns3::GlobalValue g_rlcAmEnabled ("rlcAmEnabled", "If true, use RLC AM, else use RLC UM",
@@ -492,6 +582,10 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::LteRlcAm::StatusProhibitTimer", TimeValue (MilliSeconds (10.0)));
   Config::SetDefault ("ns3::LteRlcAm::MaxTxBufferSize", UintegerValue (bufferSize * 1024 * 1024));
 
+  //Tcp
+  Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue("ns3::TcpBbr"));
+  Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1448));
+
   // handover and RT related params
   switch (hoMode)
     {
@@ -521,6 +615,7 @@ main (int argc, char *argv[])
   GlobalValue::GetValueByName ("lteUplink", booleanValue);
   bool lteUplink = booleanValue.Get ();
 
+  //McUePdcp
   Config::SetDefault ("ns3::McUePdcp::LteUplink", BooleanValue (lteUplink));
   std::cout << "Lte uplink " << lteUplink << "\n";
 
@@ -709,8 +804,25 @@ main (int argc, char *argv[])
                 << "," << 10 << std::endl;
   g_rttTrace.open("rtt.csv", std::ofstream::out);
   g_rttTrace << "\"time\",\"rtt\"" << std::endl;
+  g_handover.open("handover.trace",std::ofstream::out);
   Config::Connect("/NodeList/"+std::to_string(ueNodes.Get(0)->GetId())+"/ApplicationList/*/$ns3::PacketSink/Rx",
                     MakeCallback(&NotifyPacketSinkRx));
+
+
+  // Trace LTE eNB for RRC connection establishment and handover notification
+    Config::Connect("/NodeList/*/DeviceList/*/LteEnbRrc/ConnectionEstablished",
+                    MakeCallback(&NotifyConnectionEstablishedEnb));
+    Config::Connect("/NodeList/*/DeviceList/*/LteUeRrc/ConnectionEstablished",
+                    MakeCallback(&NotifyConnectionEstablishedUe));
+    Config::Connect("/NodeList/*/DeviceList/*/LteEnbRrc/HandoverStart",
+                    MakeCallback(&NotifyHandoverStartEnb));
+    Config::Connect("/NodeList/*/DeviceList/*/LteUeRrc/HandoverStart",
+                    MakeCallback(&NotifyHandoverStartUe));
+    Config::Connect("/NodeList/*/DeviceList/*/LteEnbRrc/HandoverEndOk",
+                    MakeCallback(&NotifyHandoverEndOkEnb));
+    Config::Connect("/NodeList/*/DeviceList/*/LteUeRrc/HandoverEndOk",
+                    MakeCallback(&NotifyHandoverEndOkUe));
+  
   Simulator::Schedule(Seconds(1.0)+NanoSeconds(1.0), &ConnectTcpTrace,remoteHost->GetId());
   Simulator::Schedule (Seconds (transientDuration), &ChangeSpeed, ueNodes.Get (0), Vector (ueSpeed, 0, 0)); // start UE movement after Seconds(0.5)
   Simulator::Schedule (Seconds (simTime - 1), &ChangeSpeed, ueNodes.Get (0), Vector (0, 0, 0)); // start UE movement after Seconds(0.5)
@@ -746,6 +858,7 @@ main (int argc, char *argv[])
     g_tcpCongStateTrace.close();
     // g_positionTrace.close();
     g_rttTrace.close();
+    g_handover.close();
   return 0;
 }
 

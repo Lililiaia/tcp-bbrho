@@ -7,14 +7,17 @@ int
 main(int argv,char**argc)
 {
     init_config();
+    
+    
+
 
     NodeContainer lteNodes;
     NodeContainer mmNodes;
     NodeContainer mcUeNodes;
     NodeContainer remoteNodes;
-    lteNodes.Create(1);
-    mmNodes.Create(4);
-    mcUeNodes.Create(1);
+    lteNodes.Create(1); //0  Cell Id 1
+    mmNodes.Create(4);// 1-4 Cell Id 2,3,4,5
+    mcUeNodes.Create(1); // 5
     remoteNodes.Create(1);
     Config::SetDefault ("ns3::MmWaveHelper::UseIdealRrc", BooleanValue(useIdealRrc));
     Config::SetDefault ("ns3::MmWaveHelper::RlcAmEnabled", BooleanValue(rlcAmEnabled));
@@ -123,7 +126,7 @@ main(int argv,char**argc)
     ueMobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
     ueMobility.SetPositionAllocator(uePositionAlloc);
     ueMobility.Install(mcUeNodes.Get(0));
-    mcUeNodes.Get(0)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(speed);
+    mcUeNodes.Get(0)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(Vector(0,0,0));
 
     // Install lte enb and mmwave device
     mmWaveHelper->SetLteHandoverAlgorithmType("ns3::"+lteHandoverAlgorithm);
@@ -157,14 +160,14 @@ main(int argv,char**argc)
     ftpServer.SetAttribute("MaxBytes", UintegerValue(20000000000));
     NS_LOG_UNCOND("setting up TCP flow from remote host to UE");
     ApplicationContainer sourceApp = ftpServer.Install(remoteNode);
-    sourceApp.Start(Seconds(1));
-    sourceApp.Stop(simTime+Seconds(1));
+    sourceApp.Start(Seconds(transientDuration));
+    sourceApp.Stop(simTime);
 
     Address sinkLocalAddress(InetSocketAddress(ueIpIface.GetAddress(0), 5000));
     PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
     ApplicationContainer sinkApp = sinkHelper.Install(mcUeNodes.Get(0));
-    sinkApp.Start(Seconds(1));
-    sinkApp.Stop(simTime+Seconds(1));
+    sinkApp.Start(Seconds(transientDuration));
+    sinkApp.Stop(simTime);
 
     /* Ptr<EpcTft> tft = Create<EpcTft>();
     EpcTft::PacketFilter dlpf;
@@ -207,6 +210,7 @@ main(int argv,char**argc)
     output.ConfigureAttributes();
     
     Simulator::Schedule(Seconds(1.00001), &ConnectTcpTrace,remoteNode->GetId());
+    Simulator::Schedule (Seconds (transientDuration), &ChangeSpeed, mcUeNodes.Get (0), speed); // start UE movement after Seconds(0.5)
     Simulator::Schedule(Seconds(10.0), &ReportProgress, Seconds(10.0));
     Simulator::Stop(simTime);
     Simulator::Run();
@@ -296,11 +300,33 @@ void init_config(){
     NS_ASSERT_MSG(distance>0.0,"UE movement distance must be large than 0m");
     double _simTime=distance/_speed;
     NS_ASSERT_MSG(_simTime>=10.0,"simTime must be large than 10s");
-    simTime=Seconds(std::ceil(_simTime));
+    
     speed.x=speed.x/distance*_speed;
     speed.y=speed.y/distance*_speed;
     speed.z=speed.z/distance*_speed;
 
+
+
+    int windowForTransient=150;
+    if (crtPeriod == 1600)
+    {
+      windowForTransient = 150;
+    }
+  else if (crtPeriod == 25600)
+    {
+      windowForTransient = 50;
+    }
+  else if (crtPeriod == 12800)
+    {
+      windowForTransient = 100;
+    }
+  else
+    {
+      NS_ABORT_MSG("Invalid crtPeriod:  "<<crtPeriod);
+    }
+
+    transientDuration=double(windowForTransient * crtPeriod)/ 1000000;
+    simTime=Seconds(std::ceil(_simTime+transientDuration));
     
     g_packetSinkRx.open("tcp-receive.csv", std::ofstream::out);
     g_packetSinkRx << "\"time\",\"bytesRx\"" << std::endl;
@@ -496,4 +522,11 @@ void ReportProgress(Time reportingInterval)
 {
     NS_LOG_INFO("*** Simulation time: " << std::fixed << std::setprecision(1) << Simulator::Now().GetSeconds() << "s");
     Simulator::Schedule(reportingInterval, &ReportProgress, reportingInterval);
+}
+
+void
+ChangeSpeed (Ptr<Node> n, Vector speed)
+{
+  n->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (speed);
+  NS_LOG_UNCOND ("************************--------------------Change Speed-------------------------------*****************");
 }
