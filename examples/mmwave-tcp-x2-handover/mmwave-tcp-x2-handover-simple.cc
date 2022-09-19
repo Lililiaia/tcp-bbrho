@@ -118,14 +118,14 @@ main(int argc, char**argv)
   //bool dl = 1;
   //bool ul = 0;
 
-    MyBulkSendHelper ftpServer("ns3::TcpSocketFactory", Address());
-    AddressValue remoteAddress(InetSocketAddress(ueIpIface.GetAddress(0), 5000));
-    ftpServer.SetAttribute("Remote", remoteAddress);
-    ftpServer.SetAttribute("MaxBytes", UintegerValue(20000000000));
-    NS_LOG_UNCOND("setting up TCP flow from remote host to UE");
-    serverApps = ftpServer.Install(remoteHost);
+  MyBulkSendHelper ftpServer("ns3::TcpSocketFactory", Address());
+  AddressValue remoteAddress(InetSocketAddress(ueIpIface.GetAddress(0), 5000));
+  ftpServer.SetAttribute("Remote", remoteAddress);
+  ftpServer.SetAttribute("MaxBytes", UintegerValue(20000000000));
+  NS_LOG_UNCOND("setting up TCP flow from remote host to UE");
+  serverApps = ftpServer.Install(remoteHost);
 
-    Address sinkLocalAddress(InetSocketAddress(ueIpIface.GetAddress(0), 5000));
-    PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
-    clientApps = sinkHelper.Install(ueNodes.Get(0));
+  Address sinkLocalAddress(InetSocketAddress(ueIpIface.GetAddress(0), 5000));
+  PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
+  clientApps = sinkHelper.Install(ueNodes.Get(0));
 }

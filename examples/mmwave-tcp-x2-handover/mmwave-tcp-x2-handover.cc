@@ -852,13 +852,13 @@ main (int argc, char *argv[])
   Simulator::Destroy ();
 
   g_packetSinkRx.close();
-    g_bulkSendTx.close();
-    g_cwndTrace.close();
-    // g_cqiTrace.close();
-    g_tcpCongStateTrace.close();
-    // g_positionTrace.close();
-    g_rttTrace.close();
-    g_handover.close();
+  g_bulkSendTx.close();
+  g_cwndTrace.close();
+  // g_cqiTrace.close();
+  g_tcpCongStateTrace.close();
+  // g_positionTrace.close();
+  g_rttTrace.close();
+  g_handover.close();
   return 0;
 }
 

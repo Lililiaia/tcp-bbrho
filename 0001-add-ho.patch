@@ -1,0 +1,556 @@
+From c865c4b6d2677aad91266ff47156044fbe1f0baa Mon Sep 17 00:00:00 2001
+From: zhaoxin <xionyuno@gmail.com>
+Date: Mon, 19 Sep 2022 21:08:37 +0800
+Subject: [PATCH] add ho
+
+---
+ src/internet/model/tcp-l4-protocol.cc |  21 ++++-
+ src/internet/model/tcp-l4-protocol.h  |   7 ++
+ src/internet/model/tcp-option-ho.cc   | 106 ++++++++++++++++++++++++++
+ src/internet/model/tcp-option-ho.h    |  40 ++++++++++
+ src/internet/model/tcp-option.h       |   1 +
+ src/internet/model/tcp-socket-base.cc |  43 +++++++++++
+ src/internet/model/tcp-socket-base.h  |  22 ++++++
+ src/internet/model/tcp-socket-state.h |   2 +
+ src/internet/wscript                  |   1 +
+ src/lte/model/lte-ue-rrc.cc           |   7 ++
+ src/lte/model/lte-ue-rrc.h            |  11 +++
+ src/mmwave/helper/mmwave-helper.cc    |  16 ++--
+ src/mmwave/model/mc-ue-net-device.cc  |   2 +-
+ 13 files changed, 271 insertions(+), 8 deletions(-)
+ create mode 100644 src/internet/model/tcp-option-ho.cc
+ create mode 100644 src/internet/model/tcp-option-ho.h
+
+diff --git a/src/internet/model/tcp-l4-protocol.cc b/src/internet/model/tcp-l4-protocol.cc
+index 4e240246..d91c5279 100644
+--- a/src/internet/model/tcp-l4-protocol.cc
++++ b/src/internet/model/tcp-l4-protocol.cc
+@@ -97,7 +97,10 @@ TcpL4Protocol::GetTypeId (void)
+ }
+ 
+ TcpL4Protocol::TcpL4Protocol ()
+-  : m_endPoints (new Ipv4EndPointDemux ()), m_endPoints6 (new Ipv6EndPointDemux ())
++  : m_endPoints (new Ipv4EndPointDemux ()), 
++    m_endPoints6 (new Ipv6EndPointDemux ()),
++    m_ho_start(nullptr),
++    m_ho_end(nullptr)
+ {
+   NS_LOG_FUNCTION (this);
+ }
+@@ -766,5 +769,21 @@ TcpL4Protocol::GetDownTarget6 (void) const
+   return m_downTarget6;
+ }
+ 
++void 
++TcpL4Protocol::SetHOLatencyRef(ns3::Time * start,ns3::Time* end){
++  m_ho_start=start;
++  m_ho_end=start;
++}
++
++Time
++TcpL4Protocol::GetHOLatency()
++{
++  if(*m_ho_start >  *m_ho_end)
++  {
++    return (*m_ho_start)-(*m_ho_end);
++  }
++  else return Seconds(0.0);
++}
++
+ } // namespace ns3
+ 
+diff --git a/src/internet/model/tcp-l4-protocol.h b/src/internet/model/tcp-l4-protocol.h
+index 5f9b348c..7df4a61d 100644
+--- a/src/internet/model/tcp-l4-protocol.h
++++ b/src/internet/model/tcp-l4-protocol.h
+@@ -27,6 +27,7 @@
+ #include "ns3/ipv6-address.h"
+ #include "ns3/sequence-number.h"
+ #include "ip-l4-protocol.h"
++#include "ns3/nstime.h"
+ 
+ 
+ namespace ns3 {
+@@ -95,6 +96,9 @@ public:
+    */
+   void SetNode (Ptr<Node> node);
+ 
++  void SetHOLatencyRef(ns3::Time * start,ns3::Time* end);
++  Time  GetHOLatency();
++
+   // NOTE: API from here should not be removed, only added. Be backward-compatible!
+ 
+   /**
+@@ -324,6 +328,9 @@ private:
+   IpL4Protocol::DownTargetCallback m_downTarget;   //!< Callback to send packets over IPv4
+   IpL4Protocol::DownTargetCallback6 m_downTarget6; //!< Callback to send packets over IPv6
+ 
++  ns3::Time* m_ho_start;
++  ns3::Time* m_ho_end;
++
+   /**
+    * \brief Copy constructor
+    *
+diff --git a/src/internet/model/tcp-option-ho.cc b/src/internet/model/tcp-option-ho.cc
+new file mode 100644
+index 00000000..d80b228c
+--- /dev/null
++++ b/src/internet/model/tcp-option-ho.cc
+@@ -0,0 +1,106 @@
++#include "tcp-option-ho.h"
++#include "ns3/log.h"
++
++namespace ns3 {
++NS_LOG_COMPONENT_DEFINE("TcpOptionTs");
++
++
++NS_OBJECT_ENSURE_REGISTERED (TcpOptionHO);
++
++
++TcpOptionHO::TcpOptionHO()
++    : TcpOption(),
++      m_timestamp(0),
++      m_ho(0)
++{
++}
++
++TcpOptionHO::~TcpOptionHO()
++{
++}
++
++TypeId
++TcpOptionHO::GetTypeId(void)
++{
++    static TypeId tid = TypeId("ns3::TcpOptionHO")
++        .SetParent<TcpOption> ()
++        .SetGroupName ("Internet")
++        .AddConstructor<TcpOptionHO> ()
++    ;
++    return tid;
++}
++
++TypeId
++TcpOptionHO::GetInstanceTypeId (void) const
++{
++  return GetTypeId ();
++}
++
++void
++TcpOptionHO::Print(std::ostream &os) const
++{
++    os << m_timestamp << ";" << m_ho;
++}
++
++uint32_t
++TcpOptionHO::GetSerializedSize(void) const
++{
++    return 10;
++}
++
++void
++TcpOptionHO::Serialize(Buffer::Iterator start) const
++{
++    Buffer::Iterator i = start;
++    i.WriteU8 (GetKind());
++    i.WriteU8 (10);
++    i.WriteHtonU32(m_timestamp);
++    i.WriteHtonU32(m_ho);
++}
++
++uint32_t
++TcpOptionHO::Deserialize(Buffer::Iterator start)
++{
++    Buffer::Iterator i  = start;
++    uint8_t readKind = i.ReadU8();
++    if(readKind != GetKind())
++    {
++        NS_LOG_WARN("Malformed Tiemstamp option");
++        return 0;
++    }
++
++    uint8_t size = i.ReadU8();
++    if(size != 10)
++    {
++        NS_LOG_WARN ("Malformed Timestamp option");
++        return 0;
++    }
++
++    m_timestamp = i.ReadNtohU32();
++    m_ho = i.ReadNtohU32();
++    return GetSerializedSize();
++}
++
++uint8_t
++TcpOptionHO::GetKind(void) const
++{
++    return TcpOption::HO;
++}
++
++uint32_t 
++TcpOptionHO::GetTimeStamp(void) const{
++    return m_timestamp;
++}
++uint32_t 
++TcpOptionHO::GetHoLatency(void) const {
++    return m_ho;
++};
++void 
++TcpOptionHO::SetTimeStamp(uint32_t ts){
++    m_timestamp=ts;
++}
++void 
++TcpOptionHO::SetHoLatency(uint32_t ho){
++    m_ho=ho;
++}
++}
+\ No newline at end of file
+diff --git a/src/internet/model/tcp-option-ho.h b/src/internet/model/tcp-option-ho.h
+new file mode 100644
+index 00000000..29e5df40
+--- /dev/null
++++ b/src/internet/model/tcp-option-ho.h
+@@ -0,0 +1,40 @@
++#ifndef TCP_OPTION_HO_H
++#define TCP_OPTION_HO_H 1
++#include "ns3/tcp-option.h"
++#include "ns3/timer.h"
++
++namespace ns3{
++
++
++class TcpOptionHO: public TcpOption
++{
++public:
++    TcpOptionHO();
++    virtual ~TcpOptionHO();
++
++static TypeId GetTypeId(void);
++virtual TypeId GetInstanceTypeId (void) const;
++virtual void Print (std::ostream &os) const;
++virtual void Serialize(Buffer::Iterator start) const;
++virtual uint32_t Deserialize(Buffer::Iterator start);
++
++virtual uint8_t GetKind(void) const;
++virtual uint32_t GetSerializedSize(void) const;
++
++uint32_t GetTimeStamp(void) const;
++uint32_t GetHoLatency(void) const;
++void SetTimeStamp(uint32_t ts);
++void SetHoLatency(uint32_t ho);
++
++
++protected:
++    uint32_t m_timestamp; // latest remote timestamp
++    uint32_t m_ho; // handover duration time
++};
++
++
++} // namespace ns3
++
++
++
++#endif
+\ No newline at end of file
+diff --git a/src/internet/model/tcp-option.h b/src/internet/model/tcp-option.h
+index 36f5a9a8..50cb6d2d 100644
+--- a/src/internet/model/tcp-option.h
++++ b/src/internet/model/tcp-option.h
+@@ -61,6 +61,7 @@ public:
+     SACKPERMITTED = 4,          //!< SACKPERMITTED
+     SACK = 5,                   //!< SACK
+     TS = 8,                     //!< TS
++    HO = 253,                   //!< HO
+     UNKNOWN = 255               //!< not a standardized value; for unknown recv'd options
+   };
+ 
+diff --git a/src/internet/model/tcp-socket-base.cc b/src/internet/model/tcp-socket-base.cc
+index fc9eacab..64df6402 100644
+--- a/src/internet/model/tcp-socket-base.cc
++++ b/src/internet/model/tcp-socket-base.cc
+@@ -56,6 +56,7 @@
+ #include "tcp-option-ts.h"
+ #include "tcp-option-sack-permitted.h"
+ #include "tcp-option-sack.h"
++#include "tcp-option-ho.h"
+ #include "tcp-congestion-ops.h"
+ #include "tcp-recovery-ops.h"
+ #include "ns3/tcp-rate-ops.h"
+@@ -153,6 +154,11 @@ TcpSocketBase::GetTypeId (void)
+                    MakeEnumChecker (TcpSocketState::Off, "Off",
+                                     TcpSocketState::On, "On",
+                                     TcpSocketState::AcceptOnly, "AcceptOnly"))
++    .AddAttribute("HandoverDiffTh","The threhold(us) to determine whether a handover is happened at latest",
++                  UintegerValue(0),
++                  MakeUintegerAccessor (&TcpSocketBase::m_latest_handover_th),
++                  MakeUintegerChecker<uint32_t> ()
++                  )
+     .AddTraceSource ("RTO",
+                      "Retransmission timeout",
+                      MakeTraceSourceAccessor (&TcpSocketBase::m_rto),
+@@ -4555,6 +4561,39 @@ TcpSocketBase::GetHighRxAck (void) const
+   return m_highRxAckMark.Get ();
+ }
+ 
++Time 
++TcpSocketBase::GetHoLatency()
++{
++  Ptr<TcpL4Protocol> tcp=this->GetObject<TcpL4Protocol>();
++  NS_ASSERT(tcp);
++  return tcp->GetHOLatency();
++}
++
++void
++TcpSocketBase::AddOptionHo(TcpHeader& header)
++{
++   Ptr<TcpOptionHO> option = CreateObject<TcpOptionHO> ();
++   option->SetTimeStamp(m_tcb->m_rcvTimestampValue);
++   option->SetHoLatency(GetHoLatency().GetMilliSeconds());
++   header.AppendOption(option);
++}
++
++void
++TcpSocketBase::ProcessOptionHo(const Ptr<const TcpOption> option)
++{
++    Ptr<const TcpOptionHO> ho=DynamicCast<const TcpOptionHO>(option);
++    if(Now().GetMilliSeconds()>ho->GetTimeStamp()
++      && Now().GetMilliSeconds()-ho->GetTimeStamp() <= m_latest_handover_th)
++    {
++      m_tcb->m_ho_time=ho->GetHoLatency();
++    }
++    else
++    {
++      m_tcb->m_ho_time=0;
++    }
++}
++
++
+ 
+ //RttHistory methods
+ RttHistory::RttHistory (SequenceNumber32 s, uint32_t c, Time t)
+@@ -4573,4 +4612,8 @@ RttHistory::RttHistory (const RttHistory& h)
+ {
+ }
+ 
++
++
++
++
+ } // namespace ns3
+diff --git a/src/internet/model/tcp-socket-base.h b/src/internet/model/tcp-socket-base.h
+index 5dd2c9d0..e900afb9 100644
+--- a/src/internet/model/tcp-socket-base.h
++++ b/src/internet/model/tcp-socket-base.h
+@@ -1227,6 +1227,14 @@ protected:
+    */
+   void AddSocketTags (const Ptr<Packet> &p) const;
+ 
++
++  /**
++   * 
++   * 
++   */
++
++  Time GetHoLatency();
++
+   /**
+    * Get the current value of the receiver's offered window (RCV.WND)
+    * \note This method exists to expose the value to the TcpTxBuffer
+@@ -1241,6 +1249,17 @@ protected:
+    */
+   SequenceNumber32 GetHighRxAck (void) const;
+ 
++
++  /**
++   * @brief 
++   * 
++   */
++
++
++  void AddOptionHo(TcpHeader& header);
++
++  void ProcessOptionHo(const Ptr<const TcpOption> option);
++
+ protected:
+   // Counters and events
+   EventId           m_retxEvent     {}; //!< Retransmission event
+@@ -1312,6 +1331,7 @@ protected:
+   uint8_t m_rcvWindShift      {0};    //!< Window shift to apply to outgoing segments
+   uint8_t m_sndWindShift      {0};    //!< Window shift to apply to incoming segments
+   bool     m_timestampEnabled {true}; //!< Timestamp option enabled
++  bool    m_hoEnabled {true};   //!< Handover option enabled
+   uint32_t m_timestampToEcho  {0};    //!< Timestamp to echo
+ 
+   EventId m_sendPendingDataEvent {}; //!< micro-delay event to send pending data
+@@ -1324,6 +1344,8 @@ protected:
+   uint32_t               m_retxThresh {3};   //!< Fast Retransmit threshold
+   bool                   m_limitedTx  {true}; //!< perform limited transmit
+ 
++  uint32_t               m_latest_handover_th;
++
+   // Transmission Control Block
+   Ptr<TcpSocketState>    m_tcb;               //!< Congestion control information
+   Ptr<TcpCongestionOps>  m_congestionControl; //!< Congestion control
+diff --git a/src/internet/model/tcp-socket-state.h b/src/internet/model/tcp-socket-state.h
+index 22069804..bc9731db 100644
+--- a/src/internet/model/tcp-socket-state.h
++++ b/src/internet/model/tcp-socket-state.h
+@@ -187,6 +187,8 @@ public:
+   uint32_t               m_rcvTimestampValue     {0}; //!< Receiver Timestamp value
+   uint32_t               m_rcvTimestampEchoReply {0}; //!< Sender Timestamp echoed by the receiver
+ 
++  // handover related variables
++  uint32_t               m_ho_time  {0};  //!< the unit is us
+   // Pacing related variables
+   bool                   m_pacing            {false}; //!< Pacing status
+   DataRate               m_maxPacingRate     {0};    //!< Max Pacing rate
+diff --git a/src/internet/wscript b/src/internet/wscript
+index d9fdf073..b332320d 100644
+--- a/src/internet/wscript
++++ b/src/internet/wscript
+@@ -233,6 +233,7 @@ def build(bld):
+         'model/rip.cc',
+         'model/rip-header.cc',
+         'helper/rip-helper.cc',
++        'model/tcp-option-ho.cc',
+         ]
+ 
+     internet_test = bld.create_ns3_module_test_library('internet')
+diff --git a/src/lte/model/lte-ue-rrc.cc b/src/lte/model/lte-ue-rrc.cc
+index c426f586..45130b6d 100644
+--- a/src/lte/model/lte-ue-rrc.cc
++++ b/src/lte/model/lte-ue-rrc.cc
+@@ -52,6 +52,7 @@
+ #include <ns3/lte-rlc-sap.h>
+ 
+ 
++
+ #include <cmath>
+ 
+ namespace ns3 {
+@@ -813,6 +814,7 @@ LteUeRrc::DoNotifyRandomAccessSuccessful ()
+ 
+         SwitchToState (CONNECTED_NORMALLY);
+         m_handoverEndOkTrace (m_imsi, m_cellId, m_rnti);
++        m_ho_end=Simulator::Now();
+         if(m_isSecondaryRRC) // an handover for secondary cells has happened.
+         // this trace is used to keep a consistent trace of the cell to which the UE is connected
+         {
+@@ -1194,7 +1196,12 @@ LteUeRrc::DoRecvRrcConnectionReconfiguration (LteRrcSap::RrcConnectionReconfigur
+           NS_LOG_INFO ("UE " << m_rnti << " on cellId " << m_cellId << " haveMobilityControlInfo == true");
+           SwitchToState (CONNECTED_HANDOVER);
+           const LteRrcSap::MobilityControlInfo& mci = msg.mobilityControlInfo;
++          
++          // get the handover start time
++          m_ho_start=Simulator::Now();
+           m_handoverStartTrace (m_imsi, m_cellId, m_rnti, mci.targetPhysCellId);
++          
++
+           //We should reset the MACs and PHYs for all the component carriers
+           for (uint16_t i = 0; i < m_numberOfComponentCarriers; i++)
+             {
+diff --git a/src/lte/model/lte-ue-rrc.h b/src/lte/model/lte-ue-rrc.h
+index 1f3d560c..c787c4a2 100644
+--- a/src/lte/model/lte-ue-rrc.h
++++ b/src/lte/model/lte-ue-rrc.h
+@@ -40,6 +40,8 @@
+ #include <ns3/traced-callback.h>
+ #include <ns3/lte-radio-bearer-info.h>
+ #include "ns3/component-carrier-ue.h"
++//#include <ns3/tcp-l4-protocol.h>
++#include<ns3/internet-module.h>
+ #include <ns3/lte-ue-ccm-rrc-sap.h>
+ #include <vector>
+ 
+@@ -154,6 +156,8 @@ public:
+    */
+   static TypeId GetTypeId (void);
+ 
++  
++
+   /// Initiaize SAP
+   void InitializeSap (void);
+ 
+@@ -1226,6 +1230,8 @@ private:
+    */
+   void CancelLeavingTrigger (uint8_t measId, uint16_t cellId);
+ 
++ 
++
+   /**
+    * The `T300` attribute. Timer for RRC connection establishment procedure
+    * (i.e., the procedure is deemed as failed if it takes longer than this).
+@@ -1256,7 +1262,12 @@ private:
+   std::vector < Ptr<Packet> > m_rlcBufferToBeForwarded;
+   uint32_t m_rlcBufferToBeForwardedSize;
+ 
++  
+ public:
++
++  // HO duration time
++  Time m_ho_start;
++  Time m_ho_end;
+   /**
+    * The number of component carriers.
+    */
+diff --git a/src/mmwave/helper/mmwave-helper.cc b/src/mmwave/helper/mmwave-helper.cc
+index 0b7481eb..023e8ecc 100644
+--- a/src/mmwave/helper/mmwave-helper.cc
++++ b/src/mmwave/helper/mmwave-helper.cc
+@@ -1011,6 +1011,10 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
+   // run intializeSap to create the proper number of sap provider/users
+   mmWaveRrc->InitializeSap ();
+ 
++  Ptr<TcpL4Protocol> tcp=n->GetObject<TcpL4Protocol>();
++  NS_ASSERT_MSG(tcp,"Must install internet stack before install a mcue device");
++  tcp->SetHOLatencyRef(&mmWaveRrc->m_ho_start,&mmWaveRrc->m_ho_end);
++
+   if (m_useIdealRrc)
+     {
+       Ptr<MmWaveUeRrcProtocolIdeal> rrcProtocol = CreateObject<MmWaveUeRrcProtocolIdeal> ();
+@@ -2562,11 +2566,11 @@ MmWaveHelper::AddX2Interface (NodeContainer enbNodes)
+     }
+ 
+   // print stats
+-  m_cnStats = CreateObject<CoreNetworkStatsCalculator> ();
++  //m_cnStats = CreateObject<CoreNetworkStatsCalculator> ();
+ 
+   // add traces
+-  Config::Connect ("/NodeList/*/$ns3::EpcX2/RxPDU",
+-                   MakeCallback (&CoreNetworkStatsCalculator::LogX2Packet, m_cnStats));
++  //Config::Connect ("/NodeList/*/$ns3::EpcX2/RxPDU",
++   //                MakeCallback (&CoreNetworkStatsCalculator::LogX2Packet, m_cnStats));
+ }
+ 
+ void
+@@ -2634,12 +2638,12 @@ MmWaveHelper::AddX2Interface (NodeContainer lteEnbNodes, NodeContainer mmWaveEnb
+   // print stats
+   if (m_cnStats == 0)
+     {
+-      m_cnStats = CreateObject<CoreNetworkStatsCalculator> ();
++      //m_cnStats = CreateObject<CoreNetworkStatsCalculator> ();
+     }
+ 
+   // add traces
+-  Config::Connect ("/NodeList/*/$ns3::EpcX2/RxPDU",
+-                   MakeCallback (&CoreNetworkStatsCalculator::LogX2Packet, m_cnStats));
++ // Config::Connect ("/NodeList/*/$ns3::EpcX2/RxPDU",
++      //             MakeCallback (&CoreNetworkStatsCalculator::LogX2Packet, m_cnStats));
+ }
+ 
+ void
+diff --git a/src/mmwave/model/mc-ue-net-device.cc b/src/mmwave/model/mc-ue-net-device.cc
+index 019b279e..237a0f16 100644
+--- a/src/mmwave/model/mc-ue-net-device.cc
++++ b/src/mmwave/model/mc-ue-net-device.cc
+@@ -414,7 +414,7 @@ McUeNetDevice::Receive (Ptr<Packet> p)
+     }
+   else
+     {
+-      NS_ABORT_MSG ("McUeNetDevice::Receive - Unknown IP type...");
++      //NS_ABORT_MSG ("McUeNetDevice::Receive - Unknown IP type...");
+     }
+ }
+ 
+-- 
+2.25.1
+
